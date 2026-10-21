@@ -34,7 +34,7 @@ jobs:
               echo "::error file=$f::missing newline at end of file"
               status=1
             fi
-          done < <(git ls-files -z -- '*.md' '*.astro' '*.ts' '*.js' '*.json' '*.css' '*.html')
+          done < <(git ls-files -z -- '*.md' '*.astro' '*.ts' '*.js' '*.json' '*.css' '*.html' '*.sh')
           echo "Checked $count file(s)."
           exit $status
 

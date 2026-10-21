@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install Synod</title>
+<meta name="description" content="Install the synod command on macOS, Linux or Windows.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDE9E1;--fg:#151A2E;--muted:#4a4f63;--accent:#9A5400;--panel:#e2ddd2;--rule:#c9c3b6;--code:#151A2E;--codefg:#EDE9E1}
+@media (prefers-color-scheme:dark){:root{--bg:#151A2E;--fg:#EDE9E1;--muted:#b4b0a8;--accent:#F4A340;--panel:#1d2340;--rule:#2d3450;--code:#0e1220;--codefg:#EDE9E1}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 1rem/1.6 "JetBrains Mono",ui-monospace,Menlo,Consolas,monospace}
+main{max-width:46rem;margin:0 auto;padding:2rem 16px 4rem}
+h1{margin:0 0 .25rem;font-size:2rem;color:var(--accent)}
+h2{margin:0 0 1rem;font-size:1.25rem}
+h3{margin:1.5rem 0 .5rem;font-size:1rem}
+p{margin:0 0 1rem}
+.lead,.muted{color:var(--muted)}
+a{color:var(--accent);font-weight:700}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+[role=tablist]{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.5rem 0 1rem}
+[role=tab]{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:.4rem .9rem;cursor:pointer}
+[role=tab][aria-selected=true]{background:var(--accent);color:#151A2E;border-color:var(--accent);font-weight:700}
+section[role=tabpanel]{background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:1rem 1rem .5rem}
+pre{margin:0 0 1rem;padding:.75rem 1rem;background:var(--code);color:var(--codefg);border-radius:6px;overflow-x:auto;font:inherit;font-size:.9rem}
+ul.dl{list-style:none;margin:0 0 1rem;padding:0}
+ul.dl li{margin:.25rem 0;overflow-wrap:anywhere}
+.note{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--rule)}
+code{font:inherit;background:var(--panel);padding:0 .25rem;border-radius:3px}
+pre code{background:none;padding:0}
+</style>
+</head>
+<body>
+<main>
+<h1>Install Synod</h1>
+<p class="lead">Get the <code>synod</code> command. <span id="release">Latest release: checking…</span></p>
+
+<div role="tablist" aria-label="Operating system">
+<button role="tab" id="tab-macos" aria-controls="macos" aria-selected="false" tabindex="-1" data-os="macos">macOS</button>
+<button role="tab" id="tab-linux" aria-controls="linux" aria-selected="false" tabindex="-1" data-os="linux">Linux</button>
+<button role="tab" id="tab-windows" aria-controls="windows" aria-selected="false" tabindex="-1" data-os="windows">Windows</button>
+<button role="tab" id="tab-go" aria-controls="go" aria-selected="false" tabindex="-1" data-os="go">Go</button>
+</div>
+
+<section role="tabpanel" id="macos" aria-labelledby="tab-macos">
+<h2>macOS</h2>
+<h3>Homebrew</h3>
+<pre><code>brew install synodlang/tap/synod</code></pre>
+<h3>install.sh</h3>
+<pre><code>curl -fsSL https://synodlang.github.io/install.sh | sh</code></pre>
+<p class="muted">Installs to <code>~/.local/bin</code>. Set <code>SYNOD_INSTALL</code> to change it, <code>SYNOD_VERSION</code> to pin a version.</p>
+<h3>Direct download</h3>
+<ul class="dl">
+<li><a data-asset="darwin-universal.tar.gz" href="https://github.com/synodlang/compiler/releases">Universal (Intel and Apple silicon)</a></li>
+<li><a data-asset="darwin-arm64.tar.gz" href="https://github.com/synodlang/compiler/releases">Apple silicon (arm64)</a></li>
+<li><a data-asset="darwin-amd64.tar.gz" href="https://github.com/synodlang/compiler/releases">Intel (amd64)</a></li>
+</ul>
+</section>
+
+<section role="tabpanel" id="linux" aria-labelledby="tab-linux">
+<h2>Linux</h2>
+<h3>Homebrew</h3>
+<pre><code>brew install synodlang/tap/synod</code></pre>
+<h3>install.sh</h3>
+<pre><code>curl -fsSL https://synodlang.github.io/install.sh | sh</code></pre>
+<p class="muted">Installs to <code>~/.local/bin</code>. Set <code>SYNOD_INSTALL</code> to change it, <code>SYNOD_VERSION</code> to pin a version.</p>
+<h3>Direct download</h3>
+<ul class="dl">
+<li><a data-asset="linux-amd64.tar.gz" href="https://github.com/synodlang/compiler/releases">x86-64 (amd64)</a></li>
+<li><a data-asset="linux-arm64.tar.gz" href="https://github.com/synodlang/compiler/releases">arm64</a></li>
+</ul>
+</section>
+
+<section role="tabpanel" id="windows" aria-labelledby="tab-windows">
+<h2>Windows</h2>
+<h3>Scoop</h3>
+<pre><code>scoop bucket add synodlang https://github.com/synodlang/scoop-bucket
+scoop install synod</code></pre>
+<h3>Direct download</h3>
+<ul class="dl">
+<li><a data-asset="windows-amd64.zip" href="https://github.com/synodlang/compiler/releases">x86-64 (amd64), synod.exe in a .zip</a></li>
+<li><a data-asset="windows-arm64.zip" href="https://github.com/synodlang/compiler/releases">arm64, synod.exe in a .zip</a></li>
+</ul>
+</section>
+
+<section role="tabpanel" id="go" aria-labelledby="tab-go">
+<h2>Go</h2>
+<h3>go install</h3>
+<pre><code>go install github.com/synodlang/compiler/cmd/synod@latest</code></pre>
+<p class="muted">Puts <code>synod</code> in <code>$(go env GOPATH)/bin</code>.</p>
+</section>
+
+<div class="note">
+<h2>Verify</h2>
+<pre><code>synod version</code></pre>
+<h2>Unsigned binaries</h2>
+<p>The binaries are not signed yet. Package managers and <code>install.sh</code> avoid the warnings below.</p>
+<ul>
+<li>macOS, file downloaded in a browser: <code>xattr -d com.apple.quarantine ./synod</code></li>
+<li>Windows SmartScreen: choose &ldquo;More info&rdquo;, then &ldquo;Run anyway&rdquo;.</li>
+</ul>
+<p>All downloads and <code>SHA256SUMS</code> are on <a href="https://github.com/synodlang/compiler/releases">GitHub Releases</a>.</p>
+</div>
+</main>
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role=tab]'));
+  var panels = {};
+  tabs.forEach(function (t) { panels[t.dataset.os] = document.getElementById(t.getAttribute('aria-controls')); });
+
+  function detect() {
+    var p = '';
+    try { p = (navigator.userAgentData && navigator.userAgentData.platform) || ''; } catch (e) {}
+    var s = (p + ' ' + (navigator.userAgent || '')).toLowerCase();
+    if (/android|iphone|ipad|ipod/.test(s)) return 'macos';
+    if (/win/.test(s) && !/darwin/.test(s)) return 'windows';
+    if (/mac/.test(s)) return 'macos';
+    if (/linux|x11|cros/.test(s)) return 'linux';
+    return 'macos';
+  }
+
+  function select(os, focus) {
+    tabs.forEach(function (t) {
+      var on = t.dataset.os === os;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      panels[t.dataset.os].hidden = !on;
+      if (on && focus) t.focus();
+    });
+  }
+
+  // Show the visitor's OS first, then the others.
+  var first = detect();
+  var bar = document.querySelector('[role=tablist]');
+  var order = tabs.slice().sort(function (a, b) {
+    return (b.dataset.os === first) - (a.dataset.os === first);
+  });
+  order.forEach(function (t) { bar.appendChild(t); });
+  order.forEach(function (t) { bar.parentNode.insertBefore(panels[t.dataset.os], document.querySelector('.note')); });
+
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () { select(t.dataset.os, false); });
+    t.addEventListener('keydown', function (e) {
+      var list = Array.prototype.slice.call(bar.querySelectorAll('[role=tab]'));
+      var i = list.indexOf(t), n = -1;
+      if (e.key === 'ArrowRight') n = (i + 1) % list.length;
+      else if (e.key === 'ArrowLeft') n = (i + list.length - 1) % list.length;
+      else if (e.key === 'Home') n = 0;
+      else if (e.key === 'End') n = list.length - 1;
+      if (n >= 0) { e.preventDefault(); select(list[n].dataset.os, true); }
+    });
+  });
+  select(first, false);
+
+  var label = document.getElementById('release');
+  label.textContent = 'See all releases on GitHub.';
+  fetch('https://api.github.com/repos/synodlang/compiler/releases/latest', { headers: { Accept: 'application/vnd.github+json' } })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (rel) {
+      var tag = rel.tag_name;
+      if (!tag) throw new Error('no tag');
+      var assets = {};
+      (rel.assets || []).forEach(function (a) { assets[a.name] = a.browser_download_url; });
+      document.querySelectorAll('a[data-asset]').forEach(function (a) {
+        var name = 'synod-' + tag + '-' + a.dataset.asset;
+        a.href = assets[name] || ('https://github.com/synodlang/compiler/releases/download/' + tag + '/' + name);
+        a.setAttribute('download', '');
+      });
+      label.textContent = 'Latest release: ' + tag + '.';
+    })
+    .catch(function () {
+      label.innerHTML = 'Downloads are on <a href="https://github.com/synodlang/compiler/releases">GitHub Releases</a>.';
+    });
+})();
+</script>
+</body>
+</html>
