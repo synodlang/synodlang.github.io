@@ -32,10 +32,14 @@ esac
 
 if command -v curl >/dev/null 2>&1; then
   fetch() { curl -fsSL "$1" -o "$2"; }
-  fetch_stdout() { curl -fsSL "$1"; }
+  # Print the redirect target of $1 without following it.
+  redirect_url() { curl -fsSI -o /dev/null -w '%{redirect_url}' "$1"; }
 elif command -v wget >/dev/null 2>&1; then
   fetch() { wget -q -O "$2" "$1"; }
-  fetch_stdout() { wget -q -O - "$1"; }
+  redirect_url() {
+    { wget -S --spider --max-redirect=0 "$1" 2>&1 || true; } |
+      sed -n 's/^[[:space:]]*[Ll]ocation:[[:space:]]*\([^[:space:]]*\).*/\1/p' | head -n 1
+  }
 else
   die "curl or wget is required"
 fi
@@ -50,9 +54,13 @@ fi
 
 tag="${SYNOD_VERSION:-}"
 if [ -z "$tag" ]; then
-  tag=$(fetch_stdout "https://api.github.com/repos/$REPO/releases/latest" |
-    sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1) ||
-    tag=""
+  # Resolve via the releases/latest redirect (no API, no rate limit).
+  loc=$(redirect_url "https://github.com/$REPO/releases/latest") || loc=""
+  tag="${loc##*/}"
+  case "$tag" in
+    v[0-9]*.[0-9]*.[0-9]*) ;;
+    *) tag="" ;;
+  esac
   [ -n "$tag" ] || die "could not find the latest release; see https://github.com/$REPO/releases or set SYNOD_VERSION"
 fi
 case "$tag" in v*) ;; *) tag="v$tag" ;; esac
