@@ -30,7 +30,7 @@ func goldenOptions() mdOptions {
 			return template.HTML(fmt.Sprintf("<synod-code lines=%d></synod-code>", strings.Count(text, "\n"))), true
 		},
 		Directive: func(text string) (template.HTML, error) {
-			return template.HTML("<directive>" + esc.Replace(text) + "</directive>"), nil
+			return template.HTML("<directive>" + mdEsc.Replace(text) + "</directive>"), nil
 		},
 	}
 }

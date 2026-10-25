@@ -76,7 +76,7 @@ type mdHeading struct {
 // mdOptions are the rendering hooks; every hook is optional.
 type mdOptions struct {
 	// HeadingID chooses the id of a heading from its level and plain text.
-	// The default is a slug of the text, made unique within the document.
+	// The default is a mdSlug of the text, made unique within the document.
 	HeadingID func(level int, text string) string
 	// Link rewrites the destination of a link or autolink.
 	Link func(href string) string
@@ -111,7 +111,7 @@ func parseMarkdown(name string, src []byte) (*mdDoc, error) {
 	text = strings.TrimSuffix(text, "\n")
 	var lines []mdLine
 	for i, s := range strings.Split(text, "\n") {
-		lines = append(lines, mdLine{i + 1, expandTabs(s)})
+		lines = append(lines, mdLine{i + 1, mdExpandTabs(s)})
 	}
 	p := &mdParser{name: name}
 	blocks, err := p.blocks(lines)
@@ -121,8 +121,8 @@ func parseMarkdown(name string, src []byte) (*mdDoc, error) {
 	return &mdDoc{name: name, blocks: blocks}, nil
 }
 
-// expandTabs turns leading tabs into four spaces.
-func expandTabs(s string) string {
+// mdExpandTabs turns leading tabs into four spaces.
+func mdExpandTabs(s string) string {
 	i := 0
 	for i < len(s) && (s[i] == ' ' || s[i] == '\t') {
 		i++
@@ -141,7 +141,7 @@ func (p *mdParser) errf(line int, format string, args ...any) error {
 	return &mdError{p.name, line, fmt.Sprintf(format, args...)}
 }
 
-func indentOf(s string) int {
+func mdIndentOf(s string) int {
 	n := 0
 	for n < len(s) && s[n] == ' ' {
 		n++
@@ -149,12 +149,12 @@ func indentOf(s string) int {
 	return n
 }
 
-func isBlank(s string) bool { return strings.TrimSpace(s) == "" }
+func mdIsBlank(s string) bool { return strings.TrimSpace(s) == "" }
 
-// fenceOpen reports the fence character count and info string of an opening
+// mdFenceOpen reports the fence character count and info string of an opening
 // code fence line.
-func fenceOpen(s string) (n int, info string, ok bool) {
-	if indentOf(s) > 3 {
+func mdFenceOpen(s string) (n int, info string, ok bool) {
+	if mdIndentOf(s) > 3 {
 		return 0, "", false
 	}
 	t := strings.TrimLeft(s, " ")
@@ -171,19 +171,19 @@ func fenceOpen(s string) (n int, info string, ok bool) {
 	return n, info, true
 }
 
-// fenceClose reports whether s closes a fence of n backticks.
-func fenceClose(s string, n int) bool {
-	if indentOf(s) > 3 {
+// mdFenceClose reports whether s closes a fence of n backticks.
+func mdFenceClose(s string, n int) bool {
+	if mdIndentOf(s) > 3 {
 		return false
 	}
 	t := strings.TrimSpace(s)
 	return len(t) >= n && strings.Trim(t, "`") == ""
 }
 
-var atxRe = regexp.MustCompile(`^ {0,3}(#{1,6})(?:[ ]+(.*?))?(?:[ ]+#+)?[ ]*$`)
+var mdAtxRe = regexp.MustCompile(`^ {0,3}(#{1,6})(?:[ ]+(.*?))?(?:[ ]+#+)?[ ]*$`)
 
-func atxHeading(s string) (level int, text string, ok bool) {
-	m := atxRe.FindStringSubmatch(s)
+func mdAtxHeading(s string) (level int, text string, ok bool) {
+	m := mdAtxRe.FindStringSubmatch(s)
 	if m == nil {
 		return 0, "", false
 	}
@@ -194,9 +194,9 @@ func atxHeading(s string) (level int, text string, ok bool) {
 	return len(m[1]), strings.TrimSpace(text), true
 }
 
-// isRule reports whether s is a horizontal rule line.
-func isRule(s string) bool {
-	if indentOf(s) > 3 {
+// mdIsRule reports whether s is a horizontal rule line.
+func mdIsRule(s string) bool {
+	if mdIndentOf(s) > 3 {
 		return false
 	}
 	t := strings.ReplaceAll(strings.TrimSpace(s), " ", "")
@@ -206,10 +206,10 @@ func isRule(s string) bool {
 	return strings.Trim(t, t[:1]) == ""
 }
 
-// isSetext reports whether s would make the previous paragraph a setext
+// mdIsSetext reports whether s would make the previous paragraph a setext
 // heading.
-func isSetext(s string) bool {
-	if indentOf(s) > 3 {
+func mdIsSetext(s string) bool {
+	if mdIndentOf(s) > 3 {
 		return false
 	}
 	t := strings.TrimSpace(s)
@@ -229,9 +229,9 @@ type mdMarker struct {
 	rest    string
 }
 
-func listMarker(s string) (mdMarker, bool) {
+func mdListMarker(s string) (mdMarker, bool) {
 	var m mdMarker
-	m.indent = indentOf(s)
+	m.indent = mdIndentOf(s)
 	if m.indent > 3 {
 		return m, false
 	}
@@ -272,8 +272,8 @@ func listMarker(s string) (mdMarker, bool) {
 	return m, true
 }
 
-func isHTMLStart(s string) bool {
-	if indentOf(s) > 3 {
+func mdIsHTMLStart(s string) bool {
+	if mdIndentOf(s) > 3 {
 		return false
 	}
 	t := strings.TrimLeft(s, " ")
@@ -285,38 +285,38 @@ func isHTMLStart(s string) bool {
 	return false
 }
 
-func isCommentStart(s string) bool {
-	return indentOf(s) <= 3 && strings.HasPrefix(strings.TrimLeft(s, " "), "<!--")
+func mdIsCommentStart(s string) bool {
+	return mdIndentOf(s) <= 3 && strings.HasPrefix(strings.TrimLeft(s, " "), "<!--")
 }
 
-// interrupts reports whether s starts a block that can interrupt a paragraph.
-func interrupts(s string) bool {
-	if _, _, ok := fenceOpen(s); ok {
+// mdInterrupts reports whether s starts a block that can interrupt a paragraph.
+func mdInterrupts(s string) bool {
+	if _, _, ok := mdFenceOpen(s); ok {
 		return true
 	}
-	if _, _, ok := atxHeading(s); ok {
+	if _, _, ok := mdAtxHeading(s); ok {
 		return true
 	}
-	if isRule(s) || isHTMLStart(s) || isCommentStart(s) {
+	if mdIsRule(s) || mdIsHTMLStart(s) || mdIsCommentStart(s) {
 		return true
 	}
-	if indentOf(s) <= 3 && strings.HasPrefix(strings.TrimLeft(s, " "), ">") {
+	if mdIndentOf(s) <= 3 && strings.HasPrefix(strings.TrimLeft(s, " "), ">") {
 		return true
 	}
-	if m, ok := listMarker(s); ok && strings.TrimSpace(m.rest) != "" && (!m.ordered || m.num == 1) {
+	if m, ok := mdListMarker(s); ok && strings.TrimSpace(m.rest) != "" && (!m.ordered || m.num == 1) {
 		return true
 	}
 	return false
 }
 
-var delimRe = regexp.MustCompile(`^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$`)
+var mdDelimRe = regexp.MustCompile(`^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?\s*$`)
 
-func isDelimRow(s string) bool {
-	return strings.Contains(s, "-") && (strings.Contains(s, "|") || strings.Contains(s, ":")) && delimRe.MatchString(s)
+func mdIsDelimRow(s string) bool {
+	return strings.Contains(s, "-") && (strings.Contains(s, "|") || strings.Contains(s, ":")) && mdDelimRe.MatchString(s)
 }
 
-// splitRow splits a table row into trimmed cells; "\|" is a literal pipe.
-func splitRow(s string) []string {
+// mdSplitRow splits a table row into trimmed cells; "\|" is a literal pipe.
+func mdSplitRow(s string) []string {
 	s = strings.TrimSpace(s)
 	s = strings.TrimPrefix(s, "|")
 	var cells []string
@@ -339,11 +339,11 @@ func splitRow(s string) []string {
 	return cells
 }
 
-// tableStart reports whether lines[i] and lines[i+1] are a table header and
+// mdTableStart reports whether lines[i] and lines[i+1] are a table header and
 // delimiter row.
-func tableStart(lines []mdLine, i int) bool {
-	return i+1 < len(lines) && strings.Contains(lines[i].s, "|") && isDelimRow(lines[i+1].s) &&
-		!isBlank(lines[i].s) && len(splitRow(lines[i].s)) == len(splitRow(lines[i+1].s))
+func mdTableStart(lines []mdLine, i int) bool {
+	return i+1 < len(lines) && strings.Contains(lines[i].s, "|") && mdIsDelimRow(lines[i+1].s) &&
+		!mdIsBlank(lines[i].s) && len(mdSplitRow(lines[i].s)) == len(mdSplitRow(lines[i+1].s))
 }
 
 func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
@@ -351,11 +351,11 @@ func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
 	i := 0
 	for i < len(lines) {
 		l := lines[i]
-		if isBlank(l.s) {
+		if mdIsBlank(l.s) {
 			i++
 			continue
 		}
-		if n, info, ok := fenceOpen(l.s); ok {
+		if n, info, ok := mdFenceOpen(l.s); ok {
 			b, next, err := p.fence(lines, i, n, info)
 			if err != nil {
 				return nil, err
@@ -364,17 +364,17 @@ func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
 			i = next
 			continue
 		}
-		if level, text, ok := atxHeading(l.s); ok {
+		if level, text, ok := mdAtxHeading(l.s); ok {
 			out = append(out, &mdBlock{kind: mdkHeading, line: l.n, end: l.n, level: level, text: text})
 			i++
 			continue
 		}
-		if isRule(l.s) {
+		if mdIsRule(l.s) {
 			out = append(out, &mdBlock{kind: mdkRule, line: l.n, end: l.n})
 			i++
 			continue
 		}
-		if isCommentStart(l.s) {
+		if mdIsCommentStart(l.s) {
 			b, next, err := p.comment(lines, i)
 			if err != nil {
 				return nil, err
@@ -383,10 +383,10 @@ func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
 			i = next
 			continue
 		}
-		if isHTMLStart(l.s) {
+		if mdIsHTMLStart(l.s) {
 			j := i
 			var parts []string
-			for j < len(lines) && !isBlank(lines[j].s) {
+			for j < len(lines) && !mdIsBlank(lines[j].s) {
 				parts = append(parts, strings.TrimSpace(lines[j].s))
 				j++
 			}
@@ -394,7 +394,7 @@ func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
 			i = j
 			continue
 		}
-		if indentOf(l.s) <= 3 && strings.HasPrefix(strings.TrimLeft(l.s, " "), ">") {
+		if mdIndentOf(l.s) <= 3 && strings.HasPrefix(strings.TrimLeft(l.s, " "), ">") {
 			b, next, err := p.quote(lines, i)
 			if err != nil {
 				return nil, err
@@ -403,7 +403,7 @@ func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
 			i = next
 			continue
 		}
-		if m, ok := listMarker(l.s); ok {
+		if m, ok := mdListMarker(l.s); ok {
 			b, next, err := p.list(lines, i, m)
 			if err != nil {
 				return nil, err
@@ -412,10 +412,10 @@ func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
 			i = next
 			continue
 		}
-		if indentOf(l.s) > 3 {
+		if mdIndentOf(l.s) > 3 {
 			return nil, p.errf(l.n, "indented code blocks are not supported; use a fence")
 		}
-		if tableStart(lines, i) {
+		if mdTableStart(lines, i) {
 			b, next, err := p.table(lines, i)
 			if err != nil {
 				return nil, err
@@ -436,10 +436,10 @@ func (p *mdParser) blocks(lines []mdLine) ([]*mdBlock, error) {
 
 func (p *mdParser) fence(lines []mdLine, i, n int, info string) (*mdBlock, int, error) {
 	open := lines[i]
-	strip := indentOf(open.s)
+	strip := mdIndentOf(open.s)
 	var body []string
 	for j := i + 1; j < len(lines); j++ {
-		if fenceClose(lines[j].s, n) {
+		if mdFenceClose(lines[j].s, n) {
 			text := strings.Join(body, "\n")
 			if len(body) > 0 {
 				text += "\n"
@@ -482,7 +482,7 @@ func (p *mdParser) quote(lines []mdLine, i int) (*mdBlock, int, error) {
 	j := i
 	for ; j < len(lines); j++ {
 		s := lines[j].s
-		if indentOf(s) > 3 || !strings.HasPrefix(strings.TrimLeft(s, " "), ">") {
+		if mdIndentOf(s) > 3 || !strings.HasPrefix(strings.TrimLeft(s, " "), ">") {
 			break
 		}
 		s = strings.TrimLeft(s, " ")[1:]
@@ -498,8 +498,8 @@ func (p *mdParser) quote(lines []mdLine, i int) (*mdBlock, int, error) {
 
 func (p *mdParser) table(lines []mdLine, i int) (*mdBlock, int, error) {
 	b := &mdBlock{kind: mdkTable, line: lines[i].n}
-	b.head = splitRow(lines[i].s)
-	for _, c := range splitRow(lines[i+1].s) {
+	b.head = mdSplitRow(lines[i].s)
+	for _, c := range mdSplitRow(lines[i+1].s) {
 		left, right := strings.HasPrefix(c, ":"), strings.HasSuffix(c, ":")
 		switch {
 		case left && right:
@@ -515,10 +515,10 @@ func (p *mdParser) table(lines []mdLine, i int) (*mdBlock, int, error) {
 	j := i + 2
 	for ; j < len(lines); j++ {
 		s := lines[j].s
-		if isBlank(s) || !strings.Contains(s, "|") || interrupts(s) {
+		if mdIsBlank(s) || !strings.Contains(s, "|") || mdInterrupts(s) {
 			break
 		}
-		cells := splitRow(s)
+		cells := mdSplitRow(s)
 		if len(cells) > len(b.head) {
 			return nil, 0, p.errf(lines[j].n, "table row has %d cells, header has %d", len(cells), len(b.head))
 		}
@@ -536,14 +536,14 @@ func (p *mdParser) paragraph(lines []mdLine, i int) (*mdBlock, int, error) {
 	j := i
 	for ; j < len(lines); j++ {
 		s := lines[j].s
-		if isBlank(s) {
+		if mdIsBlank(s) {
 			break
 		}
 		if j > i {
-			if isSetext(s) {
+			if mdIsSetext(s) {
 				return nil, 0, p.errf(lines[j].n, "setext headings are not supported; use #")
 			}
-			if interrupts(s) || tableStart(lines, j) {
+			if mdInterrupts(s) || mdTableStart(lines, j) {
 				break
 			}
 		}
@@ -552,33 +552,33 @@ func (p *mdParser) paragraph(lines []mdLine, i int) (*mdBlock, int, error) {
 	return &mdBlock{kind: mdkParagraph, line: lines[i].n, end: lines[j-1].n, text: strings.Join(parts, "\n")}, j, nil
 }
 
-func sameList(a, b mdMarker) bool { return a.ordered == b.ordered && a.bullet == b.bullet }
+func mdSameList(a, b mdMarker) bool { return a.ordered == b.ordered && a.bullet == b.bullet }
 
 func (p *mdParser) list(lines []mdLine, i int, first mdMarker) (*mdBlock, int, error) {
 	b := &mdBlock{kind: mdkList, line: lines[i].n, ordered: first.ordered, start: first.num}
 	j := i
 	for {
-		m, _ := listMarker(lines[j].s)
+		m, _ := mdListMarker(lines[j].s)
 		item := []mdLine{{lines[j].n, m.rest}}
 		k := j + 1
 		inFence, fenceN := false, 0
-		if n, _, ok := fenceOpen(m.rest); ok {
+		if n, _, ok := mdFenceOpen(m.rest); ok {
 			inFence, fenceN = true, n
 		}
 		last := j // index of the last included nonblank line
 		for ; k < len(lines); k++ {
 			s := lines[k].s
-			if isBlank(s) {
+			if mdIsBlank(s) {
 				if inFence {
 					item = append(item, mdLine{lines[k].n, ""})
 					continue
 				}
 				// Blank lines belong to the item only when its content continues.
 				nx := k + 1
-				for nx < len(lines) && isBlank(lines[nx].s) {
+				for nx < len(lines) && mdIsBlank(lines[nx].s) {
 					nx++
 				}
-				if nx >= len(lines) || indentOf(lines[nx].s) < m.width {
+				if nx >= len(lines) || mdIndentOf(lines[nx].s) < m.width {
 					break
 				}
 				for ; k < nx; k++ {
@@ -589,11 +589,11 @@ func (p *mdParser) list(lines []mdLine, i int, first mdMarker) (*mdBlock, int, e
 			}
 			var t string
 			switch {
-			case indentOf(s) >= m.width:
+			case mdIndentOf(s) >= m.width:
 				t = s[m.width:]
-			case !inFence && !isBlank(lines[k-1].s) && !interrupts(s) && !isSetext(s):
+			case !inFence && !mdIsBlank(lines[k-1].s) && !mdInterrupts(s) && !mdIsSetext(s):
 				t = strings.TrimLeft(s, " ") // lazy continuation
-				if _, ok := listMarker(s); ok {
+				if _, ok := mdListMarker(s); ok {
 					t = ""
 				}
 			}
@@ -601,10 +601,10 @@ func (p *mdParser) list(lines []mdLine, i int, first mdMarker) (*mdBlock, int, e
 				break
 			}
 			if inFence {
-				if fenceClose(t, fenceN) {
+				if mdFenceClose(t, fenceN) {
 					inFence = false
 				}
-			} else if n, _, ok := fenceOpen(t); ok {
+			} else if n, _, ok := mdFenceOpen(t); ok {
 				inFence, fenceN = true, n
 			}
 			item = append(item, mdLine{lines[k].n, t})
@@ -629,14 +629,14 @@ func (p *mdParser) list(lines []mdLine, i int, first mdMarker) (*mdBlock, int, e
 		b.end = lines[last].n
 		// Is the next nonblank line a sibling item?
 		nx := last + 1
-		for nx < len(lines) && isBlank(lines[nx].s) {
+		for nx < len(lines) && mdIsBlank(lines[nx].s) {
 			nx++
 		}
 		if nx >= len(lines) {
 			return b, nx, nil
 		}
-		nm, ok := listMarker(lines[nx].s)
-		if !ok || !sameList(first, nm) || isRule(lines[nx].s) {
+		nm, ok := mdListMarker(lines[nx].s)
+		if !ok || !mdSameList(first, nm) || mdIsRule(lines[nx].s) {
 			return b, last + 1, nil
 		}
 		if nx > last+1 {
@@ -648,26 +648,26 @@ func (p *mdParser) list(lines []mdLine, i int, first mdMarker) (*mdBlock, int, e
 
 // headings lists the headings of the document in order, with their ids.
 func (d *mdDoc) headings(opts mdOptions) []mdHeading {
-	ids := newIDs(opts)
+	ids := mdNewIDs(opts)
 	var out []mdHeading
-	walkBlocks(d.blocks, func(b *mdBlock) {
+	mdWalkBlocks(d.blocks, func(b *mdBlock) {
 		if b.kind == mdkHeading {
-			text := plainInline(b.text)
+			text := mdPlainInline(b.text)
 			out = append(out, mdHeading{b.level, text, ids.next(b.level, text), b.line})
 		}
 	})
 	return out
 }
 
-// walkBlocks calls fn for every block in document order, descending into
+// mdWalkBlocks calls fn for every block in document order, descending into
 // lists and block quotes.
-func walkBlocks(blocks []*mdBlock, fn func(*mdBlock)) {
+func mdWalkBlocks(blocks []*mdBlock, fn func(*mdBlock)) {
 	for _, b := range blocks {
 		fn(b)
 		for _, item := range b.items {
-			walkBlocks(item, fn)
+			mdWalkBlocks(item, fn)
 		}
-		walkBlocks(b.children, fn)
+		mdWalkBlocks(b.children, fn)
 	}
 }
 
@@ -675,10 +675,10 @@ func walkBlocks(blocks []*mdBlock, fn func(*mdBlock)) {
 // directives, one block per line, for search indexing.
 func (d *mdDoc) plain() string {
 	var sb strings.Builder
-	walkBlocks(d.blocks, func(b *mdBlock) {
+	mdWalkBlocks(d.blocks, func(b *mdBlock) {
 		switch b.kind {
 		case mdkHeading, mdkParagraph:
-			sb.WriteString(plainInline(b.text))
+			sb.WriteString(mdPlainInline(b.text))
 			sb.WriteByte('\n')
 		case mdkTable:
 			for _, row := range append([][]string{b.head}, b.rows...) {
@@ -686,7 +686,7 @@ func (d *mdDoc) plain() string {
 					if k > 0 {
 						sb.WriteByte(' ')
 					}
-					sb.WriteString(plainInline(c))
+					sb.WriteString(mdPlainInline(c))
 				}
 				sb.WriteByte('\n')
 			}
@@ -702,7 +702,7 @@ func (d *mdDoc) excerpt(max int) string {
 		if b.kind != mdkParagraph {
 			continue
 		}
-		s := strings.Join(strings.Fields(plainInline(b.text)), " ")
+		s := strings.Join(strings.Fields(mdPlainInline(b.text)), " ")
 		if utf8.RuneCountInString(s) <= max {
 			return s
 		}
@@ -722,7 +722,7 @@ func (d *mdDoc) excerpt(max int) string {
 // directives lists the text of every directive comment in document order.
 func (d *mdDoc) directives() []string {
 	var out []string
-	walkBlocks(d.blocks, func(b *mdBlock) {
+	mdWalkBlocks(d.blocks, func(b *mdBlock) {
 		if b.kind == mdkDirective {
 			out = append(out, b.text)
 		}
@@ -730,24 +730,24 @@ func (d *mdDoc) directives() []string {
 	return out
 }
 
-var tagRe = regexp.MustCompile(`<[^>]*>`)
+var mdTagRe = regexp.MustCompile(`<[^>]*>`)
 
-// plainInline renders inline markup to plain text.
-func plainInline(src string) string {
+// mdPlainInline renders inline markup to plain text.
+func mdPlainInline(src string) string {
 	r := &mdRenderer{name: "", opts: mdOptions{}}
 	s, err := r.inline(src, 0)
 	if err != nil {
 		return src
 	}
-	return html.UnescapeString(tagRe.ReplaceAllString(s, ""))
+	return html.UnescapeString(mdTagRe.ReplaceAllString(s, ""))
 }
 
-var nonSlug = regexp.MustCompile(`[^\p{L}\p{N}_ -]+`)
+var mdNonSlug = regexp.MustCompile(`[^\p{L}\p{N}_ -]+`)
 
-// slug is the default heading id of a text.
-func slug(text string) string {
+// mdSlug is the default heading id of a text.
+func mdSlug(text string) string {
 	s := strings.ToLower(strings.TrimSpace(text))
-	s = nonSlug.ReplaceAllString(s, "")
+	s = mdNonSlug.ReplaceAllString(s, "")
 	s = strings.ReplaceAll(s, " ", "-")
 	if s == "" {
 		return "section"
@@ -755,20 +755,20 @@ func slug(text string) string {
 	return s
 }
 
-type idAssigner struct {
+type mdIdAssigner struct {
 	opts mdOptions
 	seen map[string]int
 }
 
-func newIDs(opts mdOptions) *idAssigner {
-	return &idAssigner{opts: opts, seen: map[string]int{}}
+func mdNewIDs(opts mdOptions) *mdIdAssigner {
+	return &mdIdAssigner{opts: opts, seen: map[string]int{}}
 }
 
-func (a *idAssigner) next(level int, text string) string {
+func (a *mdIdAssigner) next(level int, text string) string {
 	if a.opts.HeadingID != nil {
 		return a.opts.HeadingID(level, text)
 	}
-	id := slug(text)
+	id := mdSlug(text)
 	n := a.seen[id]
 	a.seen[id] = n + 1
 	if n > 0 {
@@ -787,10 +787,10 @@ func (d *mdDoc) render(opts mdOptions) (template.HTML, error) {
 // in render, whatever the subsequence.
 func (d *mdDoc) renderBlocks(blocks []*mdBlock, opts mdOptions) (template.HTML, error) {
 	r := &mdRenderer{name: d.name, opts: opts, ids: map[*mdBlock]string{}}
-	ids := newIDs(opts)
-	walkBlocks(d.blocks, func(b *mdBlock) {
+	ids := mdNewIDs(opts)
+	mdWalkBlocks(d.blocks, func(b *mdBlock) {
 		if b.kind == mdkHeading {
-			r.ids[b] = ids.next(b.level, plainInline(b.text))
+			r.ids[b] = ids.next(b.level, mdPlainInline(b.text))
 		}
 	})
 	var sb strings.Builder
@@ -800,8 +800,8 @@ func (d *mdDoc) renderBlocks(blocks []*mdBlock, opts mdOptions) (template.HTML, 
 	return template.HTML(sb.String()), nil
 }
 
-// renderInline renders inline markup of a text with the options' hooks.
-func renderInline(name string, src string, opts mdOptions) (template.HTML, error) {
+// mdRenderInline renders inline markup of a text with the options' hooks.
+func mdRenderInline(name string, src string, opts mdOptions) (template.HTML, error) {
 	r := &mdRenderer{name: name, opts: opts}
 	s, err := r.inline(src, 1)
 	return template.HTML(s), err
@@ -817,7 +817,7 @@ func (r *mdRenderer) errf(line int, format string, args ...any) error {
 	return &mdError{r.name, line, fmt.Sprintf(format, args...)}
 }
 
-var esc = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;")
+var mdEsc = strings.NewReplacer("&", "&amp;", "<", "&lt;", ">", "&gt;", `"`, "&quot;")
 
 func (r *mdRenderer) blocks(sb *strings.Builder, blocks []*mdBlock, tight bool) error {
 	for _, b := range blocks {
@@ -835,7 +835,7 @@ func (r *mdRenderer) block(sb *strings.Builder, b *mdBlock, tight bool) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(sb, "<h%d id=\"%s\">%s</h%[1]d>\n", b.level, esc.Replace(r.ids[b]), s)
+		fmt.Fprintf(sb, "<h%d id=\"%s\">%s</h%[1]d>\n", b.level, mdEsc.Replace(r.ids[b]), s)
 	case mdkParagraph:
 		s, err := r.inline(b.text, b.line)
 		if err != nil {
@@ -860,9 +860,9 @@ func (r *mdRenderer) block(sb *strings.Builder, b *mdBlock, tight bool) error {
 		}
 		sb.WriteString("<pre><code")
 		if lang := strings.Fields(b.info); len(lang) > 0 {
-			sb.WriteString(` class="language-` + esc.Replace(lang[0]) + `"`)
+			sb.WriteString(` class="language-` + mdEsc.Replace(lang[0]) + `"`)
 		}
-		sb.WriteString(">" + esc.Replace(b.text) + "</code></pre>\n")
+		sb.WriteString(">" + mdEsc.Replace(b.text) + "</code></pre>\n")
 	case mdkDirective:
 		if r.opts.Directive == nil {
 			return nil
@@ -893,14 +893,14 @@ func (r *mdRenderer) block(sb *strings.Builder, b *mdBlock, tight bool) error {
 	return nil
 }
 
-var htmlTagRe = regexp.MustCompile(`</?(?:details(?: open)?|summary)>`)
+var mdHtmlTagRe = regexp.MustCompile(`</?(?:details(?: open)?|summary)>`)
 
 // rawHTML emits the <details> and <summary> tags of an HTML block; the text
 // between tags is inline Markdown.
 func (r *mdRenderer) rawHTML(sb *strings.Builder, b *mdBlock) error {
 	rest := b.text
 	for rest != "" {
-		loc := htmlTagRe.FindStringSubmatchIndex(rest)
+		loc := mdHtmlTagRe.FindStringSubmatchIndex(rest)
 		text := rest
 		if loc != nil {
 			text = rest[:loc[0]]
@@ -999,16 +999,16 @@ func (r *mdRenderer) list(sb *strings.Builder, b *mdBlock) error {
 	return nil
 }
 
-// lineAt returns the source line of byte offset i of src, which starts at base.
-func lineAt(src string, i, base int) int { return base + strings.Count(src[:i], "\n") }
+// mdLineAt returns the source line of byte offset i of src, which starts at base.
+func mdLineAt(src string, i, base int) int { return base + strings.Count(src[:i], "\n") }
 
-func isPunct(c byte) bool { return c > ' ' && c < 0x7f && !isAlnum(c) }
+func mdIsPunct(c byte) bool { return c > ' ' && c < 0x7f && !mdIsAlnum(c) }
 
-func isAlnum(c byte) bool {
+func mdIsAlnum(c byte) bool {
 	return c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= 0x80
 }
 
-func isSpace(c byte) bool { return c == ' ' || c == '\n' || c == '\t' }
+func mdIsSpace(c byte) bool { return c == ' ' || c == '\n' || c == '\t' }
 
 // inline renders inline markup; line is the source line of src's first byte.
 func (r *mdRenderer) inline(src string, line int) (string, error) {
@@ -1019,18 +1019,18 @@ func (r *mdRenderer) inline(src string, line int) (string, error) {
 		switch c {
 		case '\\':
 			if i+1 < len(src) && src[i+1] == '\n' {
-				return "", r.errf(lineAt(src, i, line), "hard line breaks are not supported")
+				return "", r.errf(mdLineAt(src, i, line), "hard line breaks are not supported")
 			}
-			if i+1 < len(src) && isPunct(src[i+1]) {
-				sb.WriteString(esc.Replace(src[i+1 : i+2]))
+			if i+1 < len(src) && mdIsPunct(src[i+1]) {
+				sb.WriteString(mdEsc.Replace(src[i+1 : i+2]))
 				i += 2
 				continue
 			}
 			sb.WriteByte('\\')
 			i++
 		case '`':
-			n := runLen(src, i, '`')
-			if j := closeTicks(src, i+n, n); j >= 0 {
+			n := mdRunLen(src, i, '`')
+			if j := mdCloseTicks(src, i+n, n); j >= 0 {
 				sb.WriteString(r.codeSpan(src[i+n : j]))
 				i = j + n
 				continue
@@ -1047,7 +1047,7 @@ func (r *mdRenderer) inline(src string, line int) (string, error) {
 				}
 				i++
 			}
-			text, dest, title, next, ok := linkAt(src, i)
+			text, dest, title, next, ok := mdLinkAt(src, i)
 			if !ok {
 				sb.WriteByte(c)
 				i = start + 1
@@ -1055,13 +1055,13 @@ func (r *mdRenderer) inline(src string, line int) (string, error) {
 			}
 			attrs := ""
 			if title != "" {
-				attrs = ` title="` + esc.Replace(title) + `"`
+				attrs = ` title="` + mdEsc.Replace(title) + `"`
 			}
 			if c == '!' {
-				alt := plainInline(text)
-				fmt.Fprintf(&sb, `<img src="%s" alt="%s"%s>`, esc.Replace(dest), esc.Replace(alt), attrs)
+				alt := mdPlainInline(text)
+				fmt.Fprintf(&sb, `<img src="%s" alt="%s"%s>`, mdEsc.Replace(dest), mdEsc.Replace(alt), attrs)
 			} else {
-				inner, err := r.inline(text, lineAt(src, i, line))
+				inner, err := r.inline(text, mdLineAt(src, i, line))
 				if err != nil {
 					return "", err
 				}
@@ -1069,33 +1069,33 @@ func (r *mdRenderer) inline(src string, line int) (string, error) {
 				if r.opts.Link != nil {
 					href = r.opts.Link(dest)
 				}
-				fmt.Fprintf(&sb, `<a href="%s"%s>%s</a>`, esc.Replace(href), attrs, inner)
+				fmt.Fprintf(&sb, `<a href="%s"%s>%s</a>`, mdEsc.Replace(href), attrs, inner)
 			}
 			i = next
 		case '<':
 			end := strings.IndexByte(src[i:], '>')
 			if end > 0 {
 				body := src[i+1 : i+end]
-				if autolinkRe.MatchString(body) {
+				if mdAutolinkRe.MatchString(body) {
 					href := body
 					if r.opts.Link != nil {
 						href = r.opts.Link(body)
 					}
-					fmt.Fprintf(&sb, `<a href="%s">%s</a>`, esc.Replace(href), esc.Replace(body))
+					fmt.Fprintf(&sb, `<a href="%s">%s</a>`, mdEsc.Replace(href), mdEsc.Replace(body))
 					i += end + 1
 					continue
 				}
 			}
-			if rawHTMLAt(src[i:]) {
-				return "", r.errf(lineAt(src, i, line), "raw HTML in text is not supported (write `<...>` in a code span): %q", clip(src[i:]))
+			if mdRawHTMLAt(src[i:]) {
+				return "", r.errf(mdLineAt(src, i, line), "raw HTML in text is not supported (write `<...>` in a code span): %q", mdClip(src[i:]))
 			}
 			sb.WriteString("&lt;")
 			i++
 		case '*', '_':
-			n := runLen(src, i, c)
+			n := mdRunLen(src, i, c)
 			if n <= 3 {
-				if j := emphasisClose(src, i, n); j >= 0 {
-					inner, err := r.inline(src[i+n:j], lineAt(src, i, line))
+				if j := mdEmphasisClose(src, i, n); j >= 0 {
+					inner, err := r.inline(src[i+n:j], mdLineAt(src, i, line))
 					if err != nil {
 						return "", err
 					}
@@ -1130,32 +1130,32 @@ func (r *mdRenderer) inline(src string, line int) (string, error) {
 	return sb.String(), nil
 }
 
-var autolinkRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]{1,31}:[^\s<>]*$`)
+var mdAutolinkRe = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9+.-]{1,31}:[^\s<>]*$`)
 
-var tagStartRe = regexp.MustCompile(`^<(/?)([a-zA-Z][a-zA-Z0-9-]*)`)
+var mdTagStartRe = regexp.MustCompile(`^<(/?)([a-zA-Z][a-zA-Z0-9-]*)`)
 
-// htmlNames are the element names that count as raw HTML in text. Any other
+// mdHtmlNames are the element names that count as raw HTML in text. Any other
 // name in angle brackets (`<version>`, `<pkg>`) is a placeholder and stays
 // literal text.
-var htmlNames = map[string]bool{}
+var mdHtmlNames = map[string]bool{}
 
 func init() {
 	for _, n := range strings.Fields(`a abbr b blockquote body br button center code col dd del details dfn div dl dt em font form h1 h2 h3 h4 h5 h6 head hr html i iframe img input ins kbd label li link mark meta nav object ol p pre q s samp script section select small span strike strong style sub summary sup table tbody td textarea tfoot th thead title tr tt u ul var video`) {
-		htmlNames[n] = true
+		mdHtmlNames[n] = true
 	}
 }
 
-// rawHTMLAt reports whether s, which starts with '<', is a comment, a
+// mdRawHTMLAt reports whether s, which starts with '<', is a comment, a
 // declaration or a tag of a real HTML element.
-func rawHTMLAt(s string) bool {
+func mdRawHTMLAt(s string) bool {
 	if len(s) > 1 && (s[1] == '!' || s[1] == '?') {
 		return true
 	}
-	m := tagStartRe.FindStringSubmatch(s)
-	return m != nil && htmlNames[strings.ToLower(m[2])]
+	m := mdTagStartRe.FindStringSubmatch(s)
+	return m != nil && mdHtmlNames[strings.ToLower(m[2])]
 }
 
-func clip(s string) string {
+func mdClip(s string) string {
 	if len(s) > 30 {
 		return s[:30] + "…"
 	}
@@ -1172,10 +1172,10 @@ func (r *mdRenderer) codeSpan(raw string) string {
 			return string(h)
 		}
 	}
-	return "<code>" + esc.Replace(s) + "</code>"
+	return "<code>" + mdEsc.Replace(s) + "</code>"
 }
 
-func runLen(s string, i int, c byte) int {
+func mdRunLen(s string, i int, c byte) int {
 	n := 0
 	for i+n < len(s) && s[i+n] == c {
 		n++
@@ -1183,14 +1183,14 @@ func runLen(s string, i int, c byte) int {
 	return n
 }
 
-// closeTicks finds a backtick run of exactly n at or after from.
-func closeTicks(s string, from, n int) int {
+// mdCloseTicks finds a backtick run of exactly n at or after from.
+func mdCloseTicks(s string, from, n int) int {
 	for i := from; i < len(s); {
 		if s[i] != '`' {
 			i++
 			continue
 		}
-		m := runLen(s, i, '`')
+		m := mdRunLen(s, i, '`')
 		if m == n {
 			return i
 		}
@@ -1199,14 +1199,14 @@ func closeTicks(s string, from, n int) int {
 	return -1
 }
 
-// emphasisClose returns the index of the closing delimiter run for the
+// mdEmphasisClose returns the index of the closing delimiter run for the
 // opening run of n c's at i, or -1.
-func emphasisClose(s string, i, n int) int {
+func mdEmphasisClose(s string, i, n int) int {
 	c := s[i]
-	if i+n >= len(s) || isSpace(s[i+n]) {
+	if i+n >= len(s) || mdIsSpace(s[i+n]) {
 		return -1
 	}
-	if c == '_' && i > 0 && isAlnum(s[i-1]) {
+	if c == '_' && i > 0 && mdIsAlnum(s[i-1]) {
 		return -1
 	}
 	for j := i + n; j < len(s); {
@@ -1214,15 +1214,15 @@ func emphasisClose(s string, i, n int) int {
 		case '\\':
 			j += 2
 		case '`':
-			m := runLen(s, j, '`')
-			if k := closeTicks(s, j+m, m); k >= 0 {
+			m := mdRunLen(s, j, '`')
+			if k := mdCloseTicks(s, j+m, m); k >= 0 {
 				j = k + m
 			} else {
 				j += m
 			}
 		case c:
-			m := runLen(s, j, c)
-			if m == n && !isSpace(s[j-1]) && !(c == '_' && j+m < len(s) && isAlnum(s[j+m])) && j > i+n {
+			m := mdRunLen(s, j, c)
+			if m == n && !mdIsSpace(s[j-1]) && !(c == '_' && j+m < len(s) && mdIsAlnum(s[j+m])) && j > i+n {
 				return j
 			}
 			j += m
@@ -1233,8 +1233,8 @@ func emphasisClose(s string, i, n int) int {
 	return -1
 }
 
-// linkAt parses [text](dest "title") with s[i] == '['.
-func linkAt(s string, i int) (text, dest, title string, next int, ok bool) {
+// mdLinkAt parses [text](dest "title") with s[i] == '['.
+func mdLinkAt(s string, i int) (text, dest, title string, next int, ok bool) {
 	depth := 0
 	j := i
 	for ; j < len(s); j++ {
@@ -1242,8 +1242,8 @@ func linkAt(s string, i int) (text, dest, title string, next int, ok bool) {
 		case '\\':
 			j++
 		case '`':
-			m := runLen(s, j, '`')
-			if k := closeTicks(s, j+m, m); k >= 0 {
+			m := mdRunLen(s, j, '`')
+			if k := mdCloseTicks(s, j+m, m); k >= 0 {
 				j = k + m - 1
 			} else {
 				j += m - 1
