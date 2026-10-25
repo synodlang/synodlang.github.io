@@ -1,0 +1,4 @@
+{{define "program"}}<div class="synod-program" id="prog-{{.ID}}" data-program="{{.Program}}" data-op="{{.Op}}"{{if .FilesJSON}} data-files="#{{.ID}}"{{end}}{{if .FilesURL}} data-files-url="{{.FilesURL}}" data-files-prefix="{{.FilesPrefix}}"{{end}} data-show="{{.ShowList}}" data-predict="{{if .Predict}}on{{else}}off{{end}}">
+{{if .FilesJSON}}<script type="application/json" id="{{.ID}}">{{.FilesJSON}}</script>
+{{end}}{{range .Code}}<pre class="synod" data-file="{{.Name}}"{{if .Changed}} data-changed="{{.Changed}}"{{end}}><code>{{.HTML}}</code></pre>
+{{end}}</div>{{end}}

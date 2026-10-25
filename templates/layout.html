@@ -1,0 +1,55 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{if .Page.Title}}{{.Page.Title}} · {{end}}Synod</title>
+{{if .Page.Description}}<meta name="description" content="{{.Page.Description}}">
+{{end}}<meta name="synod" content='{{.Meta}}'>
+<link rel="stylesheet" href="{{.Assets}}css/site.css">
+</head>
+<body{{if .Page.Section}} data-section="{{.Page.Section}}"{{end}}>
+{{if .Local}}<div class="local-banner" role="note">local build: some sources come from sibling checkouts, not from deps.json</div>
+{{end}}<header class="site-header">
+<a class="logo" href="{{.Home}}">Synod</a>
+<nav aria-label="Documentation">
+{{range .Nav}}<a href="{{.URL}}"{{if .Active}} aria-current="page"{{end}}>{{.Label}}</a>
+{{end}}</nav>
+<form class="search" role="search" onsubmit="return false">
+<input type="search" id="site-search" placeholder="Search the docs" aria-label="Search the docs" data-search-url="{{.DocsURL}}search.json" autocomplete="off">
+<ol id="search-results" hidden></ol>
+</form>
+<label class="version">
+<span class="visually-hidden">Docs version</span>
+<select id="version-switch" data-versions-url="/docs/versions.json" data-current="{{.Docs}}" data-latest="{{.Latest}}">
+<option value="{{.Docs}}" selected>{{.Docs}}{{if eq .Docs .Latest}} (latest){{end}}</option>
+</select>
+</label>
+</header>
+{{.Content}}
+<footer class="site-footer">
+<p>Synod is open source. <a href="https://github.com/synodlang">github.com/synodlang</a> · <a href="{{.DocsURL}}design/">Design</a> · <a href="/tribute/">Tribute</a></p>
+<p class="pins">Docs {{.Docs}}: {{.Release}}</p>
+</footer>
+<script src="{{.Assets}}js/search.js" defer></script>
+<script src="{{.Assets}}js/program.js" defer></script>
+<script>
+(function () {
+  var sel = document.getElementById("version-switch");
+  if (!sel || !window.fetch) return;
+  fetch(sel.dataset.versionsUrl).then(function (r) { return r.json(); }).then(function (d) {
+    sel.textContent = "";
+    d.versions.forEach(function (v) {
+      var o = document.createElement("option");
+      o.value = v.url;
+      o.textContent = v.docs + (v.docs === d.latest ? " (latest)" : "");
+      o.selected = v.docs === sel.dataset.current;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () { location.href = sel.value; });
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>
+{{end}}

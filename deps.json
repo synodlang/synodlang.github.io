@@ -1,0 +1,27 @@
+{
+  "latest": "v0.2",
+  "versions": [
+    {
+      "docs": "v0.2",
+      "dsl": {"tag": "v0.2.12", "commit": "f994b9ef5b26619b88f7d2e0458a9fda57d6a2e0"},
+      "std": {"tag": "v0.2.2", "commit": "f6f61b80edc843eab8ab8d2c5bd3692322de7b0d"},
+      "examples": {"tag": "v0.2.1", "commit": "0f15d8d8f41f6fcaa68d4b2bb921da63884dfafc"},
+      "compiler": {
+        "tag": "v0.2.6",
+        "assets": {
+          "synod-v0.2.6-linux-amd64.tar.gz": "b41261cabd954070281867e04b48fc5acc2bd93c9c84f9133f72e822c48e3661",
+          "synod-v0.2.6-darwin-universal.tar.gz": "35ed7b6b6efed124691f9d22be364b881302a18918ee565355416c35b1a564c3",
+          "synod-v0.2.6.wasm": "56e81b456582bd02845bbbe50b3586fc74cefe689e7e5baf29464501098ffb78",
+          "synod-v0.2.6-wasm_exec.js": "45ce9dfe7211247544ab6f4268eb8cb5b6f3d5ae602dc3b51447b7eada99c229"
+        }
+      },
+      "player": {
+        "tag": "v0.2.1",
+        "assets": {
+          "synod-player-v0.2.1.js": "f20f2c2adc070a960bcc705650a2252ca6ecb0b88d9053f53d3f888d1a43ea7c",
+          "synod-player-v0.2.1.d.ts": "16dbcfc4cfae266fac82f405e7da7a41a0b4be44ca8182e7a59dbffbe1ffcd89"
+        }
+      }
+    }
+  ]
+}

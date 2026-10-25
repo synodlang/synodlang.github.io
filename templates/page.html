@@ -1,0 +1,13 @@
+{{define "page"}}<main class="page">
+{{if .Toc}}<nav class="toc" aria-label="On this page">
+<ol>
+{{range .Toc}}<li class="l{{.Level}}"><a href="#{{.ID}}">{{.Title}}</a></li>
+{{end}}</ol>
+</nav>
+{{end}}<article>
+{{.Body}}
+</article>
+</main>{{end}}
+{{define "raw"}}<main class="page raw">
+{{.Body}}
+</main>{{end}}
