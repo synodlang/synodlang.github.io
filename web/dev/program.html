@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Program widget (dev page)</title>
+<meta name="synod" content='{"assets":"assets/","wasm":"synod-v0.2.6.wasm","wasmExec":"synod-v0.2.6-wasm_exec.js","player":"synod-player-v0.2.1.js","errors":"/errors/"}'>
+<link rel="stylesheet" href="../css/site.css">
+</head>
+<body>
+<main style="max-width:60rem;margin:0 auto;padding:1rem">
+<h1>Program widget</h1>
+<p>Hand-test page. Serve the <code>web/</code> folder and fetch the assets into <code>web/dev/assets/</code> (see README in this folder's .gitignore note): compiler v0.2.6 wasm and wasm_exec.js, player v0.2.1.</p>
+<div class="synod-program" data-program="tcp" data-op="run" data-files-url="tcp-files.json" data-show="tcp/demo.synod tcp/tcp.synod" data-predict="on">
+    <pre class="synod" data-file="tcp/demo.synod"><code># package main
+use github.com/synodlang/examples/tcp
+use std/lesson
+use std/sim
+
+define main
+  set client to (sim.Spawn tcp)
+  set server to (sim.Spawn tcp)
+  set server.tcp.State to &quot;LISTEN&quot;
+  lesson.Note &quot;A connection needs three messages before data can flow.&quot;
+  deliver (message tcp.Open with Server server) to client
+  after 5ms
+    lesson.Ask &quot;What does the server send back after a SYN?&quot; choosing {&quot;An ACK, and the connection is open&quot;, &quot;A SYN-ACK: its own sequence number and an acknowledgment of the client&#x27;s&quot;, &quot;A FIN, closing the connection&quot;, &quot;Nothing until the client sends data&quot;}
+  after 100ms
+    lesson.Note &quot;Both ends are ESTABLISHED: data can now flow either way.&quot;
+  sim.StopAt 200ms
+</code></pre>
+    <pre class="synod" data-file="tcp/tcp.synod"><code># package tcp
+use std/net
+use std/sim
+
+Open has
+  set Server to sim.Nobody
+
+Syn has
+  set Seq to 0
+
+SynAck has
+  set Seq to 0
+  set AckNo to 0
+
+Ack has
+  set AckNo to 0
+
+Node has
+  set State to &quot;CLOSED&quot;
+  set seq to 0
+  set peerSeq to 0
+
+# Client: the application asks to open a connection
+when [n: Node] (sim.Delivered Open)
+  set n.seq to 100
+  set n.State to &quot;SYN-SENT&quot;
+  net.Send (message Syn with Seq n.seq) from n to Open.Server
+
+# Server: answer a SYN with SYN-ACK
+when [n: Node] (net.Received Syn from client)
+  set n.peerSeq to Syn.Seq
+  set n.seq to 300
+  set n.State to &quot;SYN-RECEIVED&quot;
+  net.Send (message SynAck with Seq n.seq, AckNo (n.peerSeq plus 1)) from n to client
+
+# Client: a SYN-ACK that acknowledges our SYN completes our side
+when [n: Node] (net.Received SynAck from server)
+  if (SynAck.AckNo is (n.seq plus 1))
+    set n.peerSeq to SynAck.Seq
+    set n.State to &quot;ESTABLISHED&quot;
+    net.Send (message Ack with AckNo (n.peerSeq plus 1)) from n to server
+
+# Server: the final ACK completes the handshake
+when [n: Node] (net.Received Ack from client)
+  if (Ack.AckNo is (n.seq plus 1))
+    set n.State to &quot;ESTABLISHED&quot;
+</code></pre>
+</div>
+<p>Plain fragment, no editor: <pre class="synod"><code>define main
+  sim.StopAt 1s</code></pre></p>
+<div class="site-search"><input type="search" data-synod-search data-search-url="search-sample.json" placeholder="Search"><div data-synod-search-results hidden></div></div>
+</main>
+<script type="module" src="../js/program.js"></script>
+<script type="module" src="../js/search.js"></script>
+</body>
+</html>
