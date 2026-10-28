@@ -241,3 +241,9 @@ func jsonDoc(what string, data []byte, v any) error {
 	}
 	return nil
 }
+
+// DocIn returns `synod doc --json <pkg>` run in the module at dir.
+func (s *Synod) DocIn(dir, pkg string) ([]byte, error) {
+	res, err := s.must(dir, nil, "doc", "--json", pkg)
+	return []byte(res.Stdout), err
+}

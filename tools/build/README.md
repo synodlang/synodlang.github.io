@@ -7,8 +7,19 @@ Standard library only. `fetch` downloads what `deps.json` pins into `.deps/<docs
 checked out byte-exact at the pinned commit, the host `synod` extracted and its
 `synod version` compared with the pin). `build` writes `_site/`; `check` verifies it;
 `serve` serves it on 127.0.0.1:8000. `-local` replaces a source by a sibling tree
-(`dsl`, `std`, `examples`) or the compiler binary (`synod`) and adds a "local build"
-banner to every page.
+(`dsl`, `std`, `examples`, `looks`), the compiler binary (`synod`), the browser files
+(`wasm`, `wasmexec`: the .wasm and wasm_exec.js files), or the player's `dist` folder (`player`:
+`synod-player.js`, `.d.ts`, `synod-player-fonts.tar.gz`), and adds a "local build" banner to
+every page. Overrides apply to the latest docs version only; older versions build from their pins.
+The v0.3 entry of deps.json holds all-zero placeholder pins (its `todo` field) until the v0.3.0
+release step fills them; `fetch` refuses them, so build v0.3 with `-local` until then:
+
+    go run ./tools/build build -local dsl=../dsl,std=../std,examples=../examples,looks=../looks,synod=PATH,wasm=PATH.wasm,wasmexec=PATH-wasm_exec.js,player=../player/dist
+
+Fonts: `web/fonts` holds the four families of the player fonts asset (Inter, JetBrains Mono,
+Source Serif 4, Shantell Sans) and their OFL texts; the build compares them byte for byte with the
+pinned asset, serves them as the player's `fontBase` and waits for `fontsReady` before a first paint.
+`pages_looks.go` builds `looks/` and `looks/gallery/` (v0.3 and later).
 
 ## Files
 

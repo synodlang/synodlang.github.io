@@ -27,6 +27,7 @@ var navItems = []struct{ Key, Label, Path string }{
 	{"reference", "Reference", "reference/"},
 	{"library", "Library", "library/"},
 	{"examples", "Examples", "examples/"},
+	{"looks", "Looks", "looks/"}, // only for versions that pin the looks module
 	{"guides", "Guides", "guides/"},
 	{"errors", "Errors", "errors/"},
 	{"design", "Design", "design/"},
@@ -62,9 +63,12 @@ func (l *Layout) Render(c *Ctx, p *Page) ([]byte, error) {
 	s := shell{
 		Page: p, Meta: meta, Docs: c.V.Docs, Latest: c.Deps.Latest, DocsURL: c.DocsURL(),
 		Assets: c.AssetsURL(), Home: "/", Local: c.IsLocal(),
-		Release: "dsl " + c.V.DSL.Tag + ", compiler " + c.V.Compiler.Tag + ", std " + c.V.Std.Tag + ", examples " + c.V.Examples.Tag,
+		Release: "dsl " + c.V.DSL.Tag + ", compiler " + c.V.Compiler.Tag + ", std " + c.V.Std.Tag + ", examples " + c.V.Examples.Tag + looksPin(c.V),
 	}
 	for _, n := range navItems {
+		if n.Key == "looks" && !c.V.HasLooks() {
+			continue
+		}
 		s.Nav = append(s.Nav, navLink{n.Label, c.URL(n.Path), n.Key == p.Section})
 	}
 	var body bytes.Buffer
@@ -133,4 +137,11 @@ func (l *Layout) Program(d ProgramData) (template.HTML, error) {
 		return "", err
 	}
 	return template.HTML(b.String()), nil
+}
+
+func looksPin(v *Version) string {
+	if v.Looks == nil {
+		return ""
+	}
+	return ", looks " + v.Looks.Tag
 }

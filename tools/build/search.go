@@ -23,7 +23,7 @@ const searchExcerptMax = 300
 // sectionLabels name the Page.Section keys in search results.
 var sectionLabels = map[string]string{
 	"tutorial": "Tutorial", "reference": "Reference", "library": "Library",
-	"examples": "Examples", "guides": "Guides", "errors": "Errors", "design": "Design",
+	"examples": "Examples", "guides": "Guides", "errors": "Errors", "design": "Design", "looks": "Looks",
 }
 
 // buildSearch writes search.json of the version: for every registered page of

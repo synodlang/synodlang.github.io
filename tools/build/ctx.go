@@ -20,7 +20,7 @@ type Ctx struct {
 	Out    string            // output directory, _site
 	Deps   *Deps             // all of deps.json
 	V      *Version          // the docs version being built
-	Local  map[string]string // -local overrides (dsl, std, examples, synod), absolute
+	Local  map[string]string // -local overrides (dsl, std, examples, looks, synod, wasm, wasmexec, player), absolute; latest version only
 	Synod  *Synod            // the pinned native compiler (or the -local one)
 	Fetch  *Fetcher          // where the pinned dependencies live
 	Layout *Layout
@@ -68,6 +68,39 @@ func (c *Ctx) Source(name string) string {
 		return p
 	}
 	return c.Fetch.RepoPath(c.V, name)
+}
+
+// AssetData reads a pinned release asset: the verified download, or for a
+// -local build the file or folder entry that replaces it (wasm, wasmexec,
+// player).
+func (c *Ctx) AssetData(name string) ([]byte, error) {
+	var local string
+	switch {
+	case strings.HasSuffix(name, "-wasm_exec.js"):
+		local = c.Local["wasmexec"]
+	case strings.HasSuffix(name, ".wasm"):
+		local = c.Local["wasm"]
+	case strings.HasPrefix(name, "synod-player-fonts-"):
+		if d := c.Local["player"]; d != "" {
+			local = filepath.Join(d, "synod-player-fonts.tar.gz")
+		}
+	case strings.HasPrefix(name, "synod-player-") && strings.HasSuffix(name, ".js"):
+		if d := c.Local["player"]; d != "" {
+			local = filepath.Join(d, "synod-player.js")
+		}
+	case strings.HasPrefix(name, "synod-player-") && strings.HasSuffix(name, ".d.ts"):
+		if d := c.Local["player"]; d != "" {
+			local = filepath.Join(d, "synod-player.d.ts")
+		}
+	}
+	if local != "" {
+		return os.ReadFile(local)
+	}
+	data, err := os.ReadFile(c.Fetch.AssetPath(c.V, name))
+	if err != nil {
+		return nil, fmt.Errorf("%v (run `go run ./tools/build fetch`)", err)
+	}
+	return data, nil
 }
 
 // DocsURL is the site path of this version, ending in a slash.
@@ -118,10 +151,14 @@ func (c *Ctx) Meta() (string, error) {
 		WasmExec string `json:"wasmExec"`
 		Player   string `json:"player"`
 		Errors   string `json:"errors"`
+		FontBase string `json:"fontBase,omitempty"`
 	}
 	var err error
 	m.Assets = c.AssetsURL()
 	m.Errors = c.URL("errors/")
+	if c.V.FontsAsset() != "" {
+		m.FontBase = c.AssetsURL() + "fonts/" // web/fonts, compared with the player fonts asset
+	}
 	for _, a := range []struct {
 		dst *string
 		get func() (string, error)

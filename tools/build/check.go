@@ -69,6 +69,8 @@ func checkSite(c *Ctx) error {
 	checkTutorialPages(filepath.Join(c.Source("dsl"), "tutorial"), docs, &p, note)
 	checkExamplePages(filepath.Join(c.Source("examples"), "README.md"), docs, &p)
 	checkLibraryPages(c, docs, &p, note)
+	checkFonts(c, docs, &p)
+	checkLooksPages(c, docs, &p)
 	return p.err()
 }
 
@@ -100,6 +102,9 @@ func checkAssets(c *Ctx) error {
 		for _, name := range sortedAssets(rel) {
 			if hasArchiveSuffix(name) {
 				continue
+			}
+			if c.IsLocal() && strings.Trim(rel.Assets[name], "0") == "" {
+				continue // a placeholder pin: the asset came from a -local path
 			}
 			data, err := os.ReadFile(filepath.Join(c.Out, "docs", c.V.Docs, "assets", name))
 			if err != nil {
@@ -815,6 +820,61 @@ func checkLibraryPages(c *Ctx, docs string, p *checkProblems, note func(string, 
 			if !programs[ex] && !programs[path.Base(ex)] {
 				p.addf("library/%s: no widget runs the example %s", checkLibrarySlug(pkg), ex)
 			}
+		}
+	}
+}
+
+// checkFonts requires the four font files and their licences in the assets,
+// and the font base in the page metadata of a version that pins a fonts asset.
+func checkFonts(c *Ctx, docs string, p *checkProblems) {
+	for _, f := range []string{"Inter", "JetBrainsMono", "SourceSerif4", "ShantellSans"} {
+		for _, n := range []string{f + ".woff2", "OFL-" + f + ".txt"} {
+			if _, err := os.Stat(filepath.Join(docs, "assets", "fonts", n)); err != nil {
+				p.addf("assets/fonts/%s is missing", n)
+			}
+		}
+	}
+	if c.V.FontsAsset() != "" {
+		meta, _ := c.Meta()
+		if !strings.Contains(meta, "fontBase") {
+			p.addf("the page metadata has no fontBase")
+		}
+	}
+}
+
+// checkLooksPages checks the Looks & Themes page and the gallery of a
+// version that pins the looks module: a demo widget for every package, every
+// look x theme cell with its scene file, and the shared module assets.
+func checkLooksPages(c *Ctx, docs string, p *checkProblems) {
+	if !c.V.HasLooks() {
+		return
+	}
+	page, err := os.ReadFile(filepath.Join(docs, "looks", "index.html"))
+	if err != nil {
+		p.addf("looks/: %v", err)
+		return
+	}
+	ws := checkPageWidgets(string(page))
+	if len(ws) < 7 {
+		p.addf("looks/: %d demo widgets, expected one for each of the 7 packages", len(ws))
+	}
+	for _, f := range []string{"looks-" + c.V.Looks.Tag + ".json", "examples-" + c.V.Examples.Tag + ".json"} {
+		if _, err := os.Stat(filepath.Join(docs, "assets", f)); err != nil {
+			p.addf("assets/%s is missing", f)
+		}
+	}
+	g, err := os.ReadFile(filepath.Join(docs, "looks", "gallery", "index.html"))
+	if err != nil {
+		p.addf("looks/gallery/: %v", err)
+		return
+	}
+	cells := regexp.MustCompile(`data-scene="([^"]+)"`).FindAllStringSubmatch(string(g), -1)
+	if want := len(galleryLooks) * len(galleryThemes); len(cells) != want {
+		p.addf("looks/gallery/: %d cells, expected %d", len(cells), want)
+	}
+	for _, m := range cells {
+		if _, err := os.Stat(filepath.Join(docs, filepath.FromSlash(m[1]))); err != nil {
+			p.addf("looks/gallery/: scene %s is missing", m[1])
 		}
 	}
 }

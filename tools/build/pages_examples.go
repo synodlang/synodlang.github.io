@@ -146,7 +146,7 @@ func exampleFiles(src string) (map[string]string, error) {
 			return err
 		}
 		if d.IsDir() {
-			if d.Name() == ".git" || d.Name() == "out" {
+			if d.Name() == ".git" || d.Name() == "out" || d.Name() == "vendor" {
 				return filepath.SkipDir
 			}
 			return nil
@@ -298,13 +298,29 @@ func plainText(s string) string {
 
 var exampleFilesCache = map[string]map[string]string{}
 
-// shareVendor moves the vendored copy of the examples module out of the
-// inline files of d: files under vendor/github.com/synodlang/examples@<tag>/
-// whose text equals the module's own file are dropped and d.VendorURL names
-// the shared assets/examples-<tag>.json instead, which the widget merges
-// back under d.VendorPrefix. Other vendored files stay inline.
+// shareVendor moves the vendored copy of a pinned module (examples, or looks
+// from docs v0.3) out of the inline files of d: files under
+// vendor/github.com/synodlang/<module>@<tag>/ whose text equals the module's
+// own file are dropped and d.VendorURL names the shared
+// assets/<module>-<tag>.json instead, which the widget merges back under
+// d.VendorPrefix. Other vendored files stay inline. A widget names one shared
+// module; when it vendors both, the examples are shared and the looks stay inline.
 func shareVendor(c *Ctx, d *ProgramData) error {
-	prefix := "vendor/github.com/synodlang/examples@" + c.V.Examples.Tag + "/"
+	mods := []struct{ name, tag string }{{"examples", c.V.Examples.Tag}}
+	if c.V.HasLooks() {
+		mods = append(mods, struct{ name, tag string }{"looks", c.V.Looks.Tag})
+	}
+	for _, m := range mods {
+		done, err := shareVendorModule(c, d, m.name, m.tag)
+		if err != nil || done {
+			return err
+		}
+	}
+	return nil
+}
+
+func shareVendorModule(c *Ctx, d *ProgramData, name, tag string) (bool, error) {
+	prefix := "vendor/github.com/synodlang/" + name + "@" + tag + "/"
 	has := false
 	for n := range d.Files {
 		if strings.HasPrefix(n, prefix) {
@@ -313,14 +329,19 @@ func shareVendor(c *Ctx, d *ProgramData) error {
 		}
 	}
 	if !has {
-		return nil
+		return false, nil
 	}
-	src := c.Source("examples")
+	src := c.Source(name)
 	mod, ok := exampleFilesCache[src]
 	if !ok {
 		var err error
-		if mod, err = exampleFiles(src); err != nil {
-			return err
+		if name == "looks" {
+			mod, err = looksModuleFiles(c)
+		} else {
+			mod, err = exampleFiles(src)
+		}
+		if err != nil {
+			return false, err
 		}
 		exampleFilesCache[src] = mod
 	}
@@ -336,7 +357,28 @@ func shareVendor(c *Ctx, d *ProgramData) error {
 			}
 		}
 	}
-	d.VendorURL = "assets/examples-" + c.V.Examples.Tag + ".json"
+	asset := name + "-" + tag + ".json"
+	if name == "looks" {
+		if err := writeLooksAsset(c, asset, mod); err != nil {
+			return false, err
+		}
+	}
+	d.VendorURL = "assets/" + asset
 	d.VendorPrefix = prefix
-	return nil
+	return true, nil
+}
+
+var looksAssetWritten = map[*Ctx]bool{}
+
+// writeLooksAsset writes the shared copy of the looks module once per version.
+func writeLooksAsset(c *Ctx, asset string, files map[string]string) error {
+	if looksAssetWritten[c] {
+		return nil
+	}
+	looksAssetWritten[c] = true
+	data, err := json.Marshal(files)
+	if err != nil {
+		return err
+	}
+	return c.WriteDocs("assets/"+asset, data)
 }

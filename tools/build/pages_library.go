@@ -27,6 +27,16 @@ type docPackage struct {
 	Phrases []docPhrase `json:"phrases"`
 	Records []docRecord `json:"records"`
 	Node    *docNode    `json:"node"`
+	Kind    string      `json:"kind"` // "theme" for a theme package
+	Values  []docValue  `json:"values"`
+}
+
+// docValue is one name of a theme package (synod-doc/1, kind theme).
+type docValue struct {
+	Name  string `json:"name"`
+	Type  string `json:"type"`
+	Value any    `json:"value"`
+	Doc   string `json:"doc"`
 }
 
 type docPhrase struct {
@@ -514,6 +524,22 @@ func buildLibrary(c *Ctx) error {
 			}
 		}
 
+		// Theme values (a theme package: std/theme/default).
+		if pkg.Kind == "theme" && len(pkg.Values) > 0 {
+			toc = append(toc, TocItem{ID: "values", Title: "Values", Level: 2})
+			b.WriteString("<h2 id=\"values\">Values</h2>\n<p>Copy this package into a folder of your own to make a theme: set its first line to <code># theme &lt;folder name&gt;</code> and change the values. A theme gives every name.</p>\n")
+			b.WriteString("<div class=\"table-scroll\"><table class=\"theme-values\">\n<thead><tr><th>Name</th><th>Type</th><th>Value</th><th>Meaning</th></tr></thead>\n<tbody>\n")
+			for _, v := range pkg.Values {
+				fmt.Fprintf(&b, "<tr id=\"v-%s\"><td><code>%s</code></td><td>%s</td><td>%s<code>%s</code></td><td>%s</td></tr>\n",
+					libSlug(v.Name), libEsc(v.Name), libEsc(v.Type), swatch(v.Type, v.Value), libEsc(valueText(v.Value)), libEsc(v.Doc))
+			}
+			b.WriteString("</tbody>\n</table></div>\n")
+		}
+		if c.V.HasLooks() && strings.HasPrefix(p, "std/look") || c.V.HasLooks() && strings.HasPrefix(p, "std/theme") {
+			fmt.Fprintf(&b, "<p>More looks and themes, with an editable demo each, are on <a href=\"%s\">Looks &amp; Themes</a>; <a href=\"%s\">the gallery</a> plays every pair.</p>\n",
+				libEsc(c.URL("looks/")), libEsc(c.URL("looks/gallery/")))
+		}
+
 		// Records and the Node.
 		if len(pkg.Records) > 0 {
 			toc = append(toc, TocItem{ID: "records", Title: "Records", Level: 2})
@@ -571,6 +597,9 @@ func buildLibrary(c *Ctx) error {
 			libEsc(e.url), libEsc(e.base), libEsc(e.pkg.Title), e.phrases, e.nexamp)
 	}
 	b.WriteString("</tbody>\n</table>\n")
+	if c.V.HasLooks() {
+		fmt.Fprintf(&b, "<p>Looks and themes beyond the defaults are in the module <code>github.com/synodlang/looks</code>: see <a href=\"%s\">Looks &amp; Themes</a> and <a href=\"%s\">the gallery</a>.</p>\n", libEsc(c.URL("looks/")), libEsc(c.URL("looks/gallery/")))
+	}
 	return c.AddPage(&Page{URL: c.URL("library/"), Title: "Library", Section: "library",
 		Description: "Every phrase of the standard library, with runnable examples.", Body: linkBody(c, c.URL("library/"), template.HTML(b.String()))})
 }

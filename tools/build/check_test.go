@@ -110,12 +110,12 @@ func TestSpecCodes(t *testing.T) {
 	}
 }
 
-func TestRealSpecHas38Codes(t *testing.T) {
+func TestRealSpecHas41Codes(t *testing.T) {
 	data, err := os.ReadFile("../../../dsl/spec/11-errors.md")
 	if err != nil {
 		t.Skip("no sibling dsl checkout")
 	}
-	if n := len(checkSpecCodes(string(data))); n != 38 {
+	if n := len(checkSpecCodes(string(data))); n != 41 {
 		t.Errorf("%d codes", n)
 	}
 }

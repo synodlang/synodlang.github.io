@@ -1,12 +1,16 @@
 package main
 
 import (
+	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -22,14 +26,20 @@ func genVersionAssets(c *Ctx) error {
 			if strings.HasSuffix(name, ".tar.gz") || strings.HasSuffix(name, ".zip") {
 				continue
 			}
-			data, err := os.ReadFile(c.Fetch.AssetPath(c.V, name))
+			if strings.HasPrefix(name, "synod-player-fonts-") {
+				continue // unpacked and compared with web/fonts below
+			}
+			data, err := c.AssetData(name)
 			if err != nil {
-				return fmt.Errorf("%v (run `go run ./tools/build fetch`)", err)
+				return err
 			}
 			if err := c.WriteDocs("assets/"+name, data); err != nil {
 				return err
 			}
 		}
+	}
+	if err := verifyFonts(c); err != nil {
+		return err
 	}
 	web := filepath.Join(c.Root, "web")
 	if _, err := os.Stat(web); err != nil {
@@ -145,4 +155,57 @@ func sameFile(a, b string) (bool, error) {
 		return false, err
 	}
 	return bytes.Equal(x, y), nil
+}
+
+// verifyFonts checks that web/fonts, which the site serves for its own pages
+// and as the player's fontBase, holds exactly the files of the pinned player
+// fonts asset (decision 118). A version without a fonts asset has nothing to
+// compare.
+func verifyFonts(c *Ctx) error {
+	name := c.V.FontsAsset()
+	if name == "" {
+		return nil
+	}
+	gz, err := c.AssetData(name)
+	if err != nil {
+		return err
+	}
+	zr, err := gzip.NewReader(bytes.NewReader(gz))
+	if err != nil {
+		return fmt.Errorf("%s: %v", name, err)
+	}
+	tr := tar.NewReader(zr)
+	n := 0
+	for {
+		h, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return fmt.Errorf("%s: %v", name, err)
+		}
+		if h.Typeflag != tar.TypeReg {
+			continue
+		}
+		base := path.Base(h.Name)
+		if !strings.HasSuffix(base, ".woff2") && !strings.HasPrefix(base, "OFL-") {
+			continue
+		}
+		data, err := io.ReadAll(tr)
+		if err != nil {
+			return err
+		}
+		mine, err := os.ReadFile(filepath.Join(c.Root, "web", "fonts", base))
+		if err != nil {
+			return fmt.Errorf("web/fonts/%s is missing; the player fonts asset has it: %v", base, err)
+		}
+		if !bytes.Equal(mine, data) {
+			return fmt.Errorf("web/fonts/%s differs from %s (decision 118: one font set); copy the asset's files", base, name)
+		}
+		n++
+	}
+	if n < 8 {
+		return fmt.Errorf("%s holds %d font files, expected the 4 woff2 and 4 OFL texts", name, n)
+	}
+	return nil
 }

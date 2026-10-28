@@ -54,3 +54,12 @@ understand, it has done its job.
 4. [Leslie Lamport's own page of his writings](https://lamport.azurewebsites.net/pubs/pubs.html),
    where his papers can be read, with his notes on many of them.
 5. [ACM A.M. Turing Award 2013](https://awards.acm.org/award-recipients/lamport_1205376).
+
+## Inspiration
+
+The [looks and themes](docs:looks/) are inspired by two projects, and only inspired:
+the **Manim** community's way of explaining an idea by drawing it and moving it
+step by step (MIT licence), and the **Solarized** colour values by Ethan
+Schoonover (MIT licence). Synod uses their ideas and, for Solarized, its published
+colour values; it copies no code, and no look, theme or font carries another
+project's name or marks. Thank you to both.

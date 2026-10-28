@@ -1,7 +1,7 @@
 // Program widgets: every .synod-program element becomes an editable, runnable
 // program. See the contract in the site build plan (section 3.5):
 //
-//   <meta name="synod" content='{"assets":"…/assets/","wasm":"…","wasmExec":"…","player":"…","errors":"…/errors/"}'>
+//   <meta name="synod" content='{"assets":"…/assets/","wasm":"…","wasmExec":"…","player":"…","errors":"…/errors/","fontBase":"…/assets/fonts/"}'>
 //   <div class="synod-program" data-program="raft" data-op="run|check"
 //        data-files="#f1" | data-files-url="assets/examples-v0.2.1.json" [data-files-prefix=""]
 //        [data-vendor-url="assets/examples-v0.2.1.json" data-vendor-prefix="vendor/github.com/synodlang/examples@v0.2.1/"]
@@ -85,6 +85,16 @@ let playerModule = null;
 function loadPlayer() {
   if (!playerModule) playerModule = import(/* @vite-ignore */ assetUrl(meta.player));
   return playerModule;
+}
+
+// options for every player of the page: the font folder of the version
+function playerOptions(o) {
+  return meta.fontBase ? { ...o, fontBase: new URL(meta.fontBase, document.baseURI).href } : o;
+}
+async function playerReady(p) {
+  try {
+    if (p.fontsReady) await p.fontsReady();
+  } catch (_) {}
 }
 
 // ---------------------------------------------------------------- helpers
@@ -482,12 +492,17 @@ class Widget {
       this.buildStage();
       this.stage.hidden = false;
       this.setAspect(scene);
-      this.player = mod.createPlayer(this.canvas, sceneText, { autoplay: true, stopAtPause: this.predict });
+      this.player = mod.createPlayer(this.canvas, sceneText, playerOptions({ autoplay: false, stopAtPause: this.predict }));
       this.wirePlayer();
+      // the first frame waits for the fonts (decision 118)
+      await playerReady(this.player);
+      this.player.seek(0);
+      this.player.play();
     } else {
       this.stage.hidden = false;
       this.setAspect(scene);
       this.player.setScene(sceneText);
+      await playerReady(this.player);
       this.player.seek(0);
       this.player.play();
     }

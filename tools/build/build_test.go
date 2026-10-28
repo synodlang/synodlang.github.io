@@ -45,7 +45,7 @@ func TestParseDepsRejects(t *testing.T) {
 	}
 	for name, edit := range map[string][2]string{
 		"short commit": {"8d8c8b54e26565737c805517172e3911696b511a", "8d8c8b"},
-		"bad latest":   {`"latest": "v0.2"`, `"latest": "v0.3"`},
+		"bad latest":   {`"latest": "v0.3"`, `"latest": "v0.9"`},
 		"unknown":      {`"latest"`, `"lastest"`},
 		"short sha":    {"d10da4ba04ce33aaa79f1705428cb7ab6f8463764dc719632ede0e4916a11433", "d10d"},
 	} {

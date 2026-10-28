@@ -72,6 +72,9 @@ func (f *Fetcher) RepoPath(v *Version, repo string) string {
 // Fetch makes Dir hold everything version v pins, verified. Files that
 // already match their pin are not downloaded again.
 func (f *Fetcher) Fetch(v *Version) error {
+	if ph := v.Placeholders(); len(ph) > 0 {
+		return fmt.Errorf("%s pins are placeholders (%s): the release step fills them; build with -local until then", v.Docs, strings.Join(ph, ", "))
+	}
 	unlock, err := f.lock()
 	if err != nil {
 		return err
@@ -91,8 +94,8 @@ func (f *Fetcher) Fetch(v *Version) error {
 	for _, r := range []struct {
 		name string
 		repo Repo
-	}{{"dsl", v.DSL}, {"std", v.Std}, {"examples", v.Examples}} {
-		if f.SkipRepos[r.name] {
+	}{{"dsl", v.DSL}, {"std", v.Std}, {"examples", v.Examples}, {"looks", v.looksRepo()}} {
+		if f.SkipRepos[r.name] || r.repo.Tag == "" {
 			continue
 		}
 		if err := f.checkout(v, r.name, r.repo); err != nil {

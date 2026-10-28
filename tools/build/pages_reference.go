@@ -278,6 +278,7 @@ type refSnippets struct {
 
 var (
 	packageLineRe = regexp.MustCompile(`^# package ([a-z][a-z0-9]*)\s*$`)
+	looksUseRe    = regexp.MustCompile(`(?m)^use github\.com/synodlang/looks/([A-Za-z0-9_/.-]+)\s*$`)
 	examplesUseRe = regexp.MustCompile(`(?m)^use github\.com/synodlang/examples/([A-Za-z0-9_/.-]+)\s*$`)
 )
 
@@ -331,11 +332,21 @@ func (s *refSnippets) snippetFiles(kind, pkg, text string) (files map[string]str
 		file = pkg + "/" + pkg + ".synod"
 	}
 	files = map[string]string{file: text}
-	mod := "module example.com/snippet\nsynod 0.2\n"
+	mod := "module example.com/snippet\nsynod " + strings.TrimPrefix(s.c.V.Docs, "v") + "\n"
 	if examplesUseRe.MatchString(text) {
 		ver := s.c.V.Examples.Tag
 		mod += "require github.com/synodlang/examples " + ver + "\n"
 		if err := vendorExamples(s.c, files, text, ver); err != nil {
+			return nil, "", err
+		}
+	}
+	if looksUseRe.MatchString(text) {
+		if !s.c.V.HasLooks() {
+			return nil, "", fmt.Errorf("a snippet imports github.com/synodlang/looks but %s pins no looks module", s.c.V.Docs)
+		}
+		ver := s.c.V.Looks.Tag
+		mod += "require github.com/synodlang/looks " + ver + "\n"
+		if err := vendorLooks(s.c, files, text, ver); err != nil {
 			return nil, "", err
 		}
 	}
@@ -346,8 +357,16 @@ func (s *refSnippets) snippetFiles(kind, pkg, text string) (files map[string]str
 // vendorExamples adds the files of the examples packages that text imports,
 // and of those they import, under vendor/github.com/synodlang/examples@ver/.
 func vendorExamples(c *Ctx, files map[string]string, text, ver string) error {
-	root := c.Source("examples")
-	prefix := "vendor/github.com/synodlang/examples@" + ver + "/"
+	return vendorModule(c.Source("examples"), "vendor/github.com/synodlang/examples@"+ver+"/", examplesUseRe, files, text)
+}
+
+// vendorLooks does the same for github.com/synodlang/looks (G52: synod.wasm
+// embeds only std, so the page carries the module it imports).
+func vendorLooks(c *Ctx, files map[string]string, text, ver string) error {
+	return vendorModule(c.Source("looks"), "vendor/github.com/synodlang/looks@"+ver+"/", looksUseRe, files, text)
+}
+
+func vendorModule(root, prefix string, useRe *regexp.Regexp, files map[string]string, text string) error {
 	mod, err := os.ReadFile(filepath.Join(root, "synod.mod"))
 	if err != nil {
 		return err
@@ -358,7 +377,7 @@ func vendorExamples(c *Ctx, files map[string]string, text, ver string) error {
 	for len(queue) > 0 {
 		cur := queue[0]
 		queue = queue[1:]
-		for _, m := range examplesUseRe.FindAllStringSubmatch(cur, -1) {
+		for _, m := range useRe.FindAllStringSubmatch(cur, -1) {
 			if seen[m[1]] {
 				continue
 			}

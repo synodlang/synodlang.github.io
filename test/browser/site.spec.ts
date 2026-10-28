@@ -125,3 +125,51 @@ test("/docs/ leads to the latest docs", async ({ page }) => {
   await page.waitForURL(`**${docs}`);
   expect(new URL(page.url()).pathname).toBe(docs);
 });
+
+test("the Looks & Themes page: every package demo runs, edits and re-runs", async ({ page }) => {
+  const n = widgetCount("looks");
+  expect(n, "the looks page has no demo widget").toBeGreaterThanOrEqual(7);
+  const errors = failOnPageErrors(page);
+  await page.goto(`${docs}looks/`);
+  const widgets = page.locator(".synod-program");
+  await expect(widgets).toHaveCount(n);
+  for (let i = 0; i < n; i++) {
+    const w = widgets.nth(i);
+    await expect(w).toHaveClass(/synod-program-ready/);
+    await runEditRerun(w);
+    // the run is drawn: the stage is shown with a canvas
+    await expect(w.locator("canvas.sp-canvas")).toBeVisible();
+  }
+  expect(errors).toEqual([]);
+});
+
+test("the gallery plays every look x theme cell", async ({ page }) => {
+  const html = readFileSync(join(docsDir, "looks", "gallery", "index.html"), "utf8");
+  const cells = (html.match(/class="gal-cell"/g) ?? []).length;
+  expect(cells).toBe(18);
+  const errors = failOnPageErrors(page);
+  await page.goto(`${docs}looks/gallery/`);
+  const all = page.locator(".gal-cell");
+  await expect(all).toHaveCount(cells);
+  for (let i = 0; i < cells; i++) {
+    const cell = all.nth(i);
+    await cell.scrollIntoViewIfNeeded();
+    await expect(cell).toHaveAttribute("data-state", /^(playing|still)$/);
+  }
+  // a playing cell has drawn something: its canvas is not a single color
+  const first = all.nth(0);
+  await first.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  const varied = await first.locator("canvas").evaluate((c: HTMLCanvasElement) => {
+    const d = c.getContext("2d")?.getImageData(0, 0, c.width, c.height).data;
+    if (!d) return false;
+    const seen = new Set<number>();
+    for (let i = 0; i < d.length && seen.size < 4; i += 4 * 997) seen.add((d[i] << 16) | (d[i + 1] << 8) | d[i + 2]);
+    return seen.size > 1;
+  });
+  expect(varied).toBe(true);
+  // the toggle pauses a cell
+  await first.locator(".gal-toggle").click();
+  await expect(first).toHaveAttribute("data-state", "paused");
+  expect(errors).toEqual([]);
+});

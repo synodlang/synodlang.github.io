@@ -1,18 +1,34 @@
 /* Synod site: docs styling, light and dark, program widgets. */
 
+/* The font set is closed (decision 118): the four families of the player fonts asset,
+   self-hosted; web/fonts holds the asset's files and the build compares them. */
 @font-face {
-  font-family: "JetBrains Mono";
+  font-family: "Inter";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 100 900;
   font-display: swap;
-  src: url("../fonts/JetBrainsMono-Regular.woff2") format("woff2");
+  src: url("../fonts/Inter.woff2") format("woff2");
 }
 @font-face {
   font-family: "JetBrains Mono";
   font-style: normal;
-  font-weight: 700;
+  font-weight: 100 800;
   font-display: swap;
-  src: url("../fonts/JetBrainsMono-Bold.woff2") format("woff2");
+  src: url("../fonts/JetBrainsMono.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url("../fonts/SourceSerif4.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Shantell Sans";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("../fonts/ShantellSans.woff2") format("woff2");
 }
 
 :root {
@@ -38,7 +54,8 @@
   --t-value: #b3341f;
   --t-comment: #7a8095;
   --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --serif: "Source Serif 4", Georgia, "Times New Roman", serif;
   --measure: 46rem;
 }
 
@@ -83,6 +100,7 @@ a:hover { text-decoration-thickness: 2px; }
 
 h1, h2, h3, h4 { line-height: 1.25; margin: 2em 0 .5em; font-weight: 650; }
 h1 { font-size: 2rem; margin-top: 0; }
+h1, h2 { font-family: var(--serif); }
 h2 { font-size: 1.5rem; padding-top: .3em; }
 h3 { font-size: 1.2rem; }
 p, ul, ol, pre, table, details, blockquote { margin: 0 0 1.1em; }
@@ -650,3 +668,17 @@ main td code, main th code { overflow-wrap: anywhere; }
   h2 { font-size: 1.3rem; }
   .phrase { padding-left: .7em; padding-right: .7em; }
 }
+
+/* Looks & Themes, gallery (pages_looks.go) */
+.swatch { display: inline-block; width: .9em; height: .9em; margin-right: .3em; vertical-align: -.1em; border: 1px solid var(--line); border-radius: 3px; }
+.table-scroll { overflow-x: auto; max-width: 100%; }
+table.theme-values { font-size: .82rem; }
+table.theme-values td, table.theme-values th { white-space: nowrap; }
+.looks-pkg { margin: 1.5rem 0 2.5rem; }
+.looks-source summary, .looks-values summary { cursor: pointer; color: var(--muted); margin: .5em 0; }
+.gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: 1rem; margin: 1rem 0 2rem; }
+.gal-cell { margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
+.gal-cell canvas { display: block; width: 100%; aspect-ratio: 16 / 10; background: #151a2e; }
+.gal-cell figcaption { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .4rem .6rem; font-size: .85rem; }
+.gal-cell[data-state="error"] figcaption { color: var(--bad); }
+.gal-tag { font-size: .72rem; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 .5em; margin-left: .3em; }

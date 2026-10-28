@@ -23,8 +23,11 @@ type Version struct {
 	DSL      Repo    `json:"dsl"`
 	Std      Repo    `json:"std"`
 	Examples Repo    `json:"examples"`
+	Looks    *Repo   `json:"looks,omitempty"` // from docs v0.3 (decision 106)
 	Compiler Release `json:"compiler"`
 	Player   Release `json:"player"`
+	// Todo says which pins are placeholders (all zeros) the release step fills.
+	Todo string `json:"todo,omitempty"`
 }
 
 // Repo pins a repository by tag and the commit the tag must name.
@@ -102,6 +105,11 @@ func (v *Version) validate() error {
 			return fmt.Errorf("%s: commit %q is not 40 lowercase hex digits", name, r.Commit)
 		}
 	}
+	if v.Looks != nil {
+		if !tagRe.MatchString(v.Looks.Tag) || !commitRe.MatchString(v.Looks.Commit) {
+			return fmt.Errorf("looks: tag %q or commit %q is malformed", v.Looks.Tag, v.Looks.Commit)
+		}
+	}
 	for name, r := range map[string]Release{"compiler": v.Compiler, "player": v.Player} {
 		if !tagRe.MatchString(r.Tag) {
 			return fmt.Errorf("%s: tag %q is not vX.Y.Z", name, r.Tag)
@@ -174,4 +182,45 @@ func sortedAssets(r Release) []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// FontsAsset names the player's fonts archive, or "" for a version without one.
+func (v *Version) FontsAsset() string {
+	name := "synod-player-fonts-" + v.Player.Tag + ".tar.gz"
+	if _, ok := v.Player.Assets[name]; ok {
+		return name
+	}
+	return ""
+}
+
+// HasLooks reports whether the version pins the looks module.
+func (v *Version) HasLooks() bool { return v.Looks != nil }
+
+const zeroCommit = "0000000000000000000000000000000000000000"
+
+// Placeholders lists the pins that are still all zeros (a release not made yet).
+func (v *Version) Placeholders() []string {
+	var out []string
+	for name, r := range map[string]*Repo{"dsl": &v.DSL, "std": &v.Std, "examples": &v.Examples, "looks": v.Looks} {
+		if r != nil && r.Commit == zeroCommit {
+			out = append(out, name)
+		}
+	}
+	for name, r := range map[string]Release{"compiler": v.Compiler, "player": v.Player} {
+		for a, sum := range r.Assets {
+			if strings.Trim(sum, "0") == "" {
+				out = append(out, name+":"+a)
+			}
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+// looksRepo is the looks pin, or the zero Repo for a version without one.
+func (v *Version) looksRepo() Repo {
+	if v.Looks == nil {
+		return Repo{}
+	}
+	return *v.Looks
 }

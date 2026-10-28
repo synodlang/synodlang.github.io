@@ -49,6 +49,10 @@ func buildHomePage(c *Ctx) error {
 	if err := c.WriteDocs("assets/logo-512.png", logo); err != nil {
 		return err
 	}
+	fontBase := ""
+	if c.V.FontsAsset() != "" {
+		fontBase = c.AssetsURL() + "fonts/"
+	}
 	player, err := c.V.PlayerAsset()
 	if err != nil {
 		return err
@@ -59,7 +63,7 @@ func buildHomePage(c *Ctx) error {
 		esc(c.AssetsURL()+"logo-512.png"),
 		esc(c.URL("tutorial/")), esc("/install/"), esc(c.URL("reference/")),
 		esc(c.URL("examples/")), esc(lang),
-		esc(c.AssetsURL()+"home-raft.json"), esc(c.AssetsURL()+player))
+		esc(c.AssetsURL()+"home-raft.json"), esc(c.AssetsURL()+player), esc(fontBase))
 	return c.AddPage(&Page{
 		URL:         "/",
 		Title:       "",
@@ -70,7 +74,7 @@ func buildHomePage(c *Ctx) error {
 }
 
 // homeHTML takes: logo, tutorial, install, reference, examples URLs, the
-// language version, the scene URL and the player URL.
+// language version, the scene URL, the player URL and the font folder URL (empty without one).
 const homeHTML = `<style>
 .home{max-width:60rem;margin:0 auto;padding:2.5rem 16px 3rem;text-align:center}
 .home img{width:96px;height:96px;display:block;margin:0 auto 1rem}
@@ -99,8 +103,15 @@ const homeHTML = `<style>
 import { createPlayer } from "%[8]s";
 const canvas = document.getElementById("home-raft");
 const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-fetch("%[7]s").then((r) => r.text()).then((scene) => {
-  createPlayer(canvas, scene, { autoplay: !reduce, loop: true });
+const fontBase = "%[9]s";
+fetch("%[7]s").then((r) => r.text()).then(async (scene) => {
+  const opts = { autoplay: false, loop: true };
+  if (fontBase) opts.fontBase = new URL(fontBase, document.baseURI).href;
+  const p = createPlayer(canvas, scene, opts);
+  // the first frame waits for the fonts (decision 118)
+  if (p.fontsReady) await p.fontsReady();
+  if (reduce) p.renderFrame(0);
+  else p.play();
 }).catch(() => {});
 </script>`
 
@@ -114,6 +125,7 @@ func buildDocsHome(c *Ctx) error {
 		{"Reference", "reference/", "The specification of the language, one page per chapter."},
 		{"Library", "library/", "Every standard package and phrase, each with a runnable example."},
 		{"Examples", "examples/", "Raft, Paxos, two-phase commit and more. Run them, edit them, break them."},
+		{"Looks & Themes", "looks/", "Looks and themes beyond the defaults: source, an editable demo for each, and a gallery of every pair."},
 		{"Guides", "guides/", "Install Synod, write a look, publish a package, use agents."},
 		{"Errors", "errors/", "Every diagnostic code: what it means, a program that shows it, and the fix."},
 		{"Design", "design/", "The principles behind the language and the decisions that shaped it."},
@@ -123,6 +135,9 @@ func buildDocsHome(c *Ctx) error {
 	b.WriteString(string(intro))
 	b.WriteString("\n<ul class=\"cards\">\n")
 	for _, k := range cards {
+		if k.Path == "looks/" && !c.V.HasLooks() {
+			continue
+		}
 		url := c.URL(k.Path)
 		if strings.HasPrefix(k.Path, "/") {
 			url = k.Path

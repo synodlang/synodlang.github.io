@@ -28,7 +28,9 @@ flags:
   -deps file     deps file (default deps.json)
   -deps-dir dir  where fetch puts the dependencies (default .deps)
   -out dir       output directory (default _site)
-  -local list    build/fetch: dsl=../dsl,std=../std,examples=../examples,synod=path
+  -local list    build/fetch/check, for the latest docs version only: dsl, std, examples, looks
+                 (checkouts), synod (binary), wasm, wasmexec (files), player (the dist folder
+                 with synod-player.js, .d.ts and synod-player-fonts.tar.gz)
 `
 
 func main() {
@@ -90,9 +92,9 @@ func parseLocal(s string) (map[string]string, error) {
 			return nil, fmt.Errorf("-local: %q is not name=path", item)
 		}
 		switch name {
-		case "dsl", "std", "examples", "synod":
+		case "dsl", "std", "examples", "looks", "synod", "wasm", "wasmexec", "player":
 		default:
-			return nil, fmt.Errorf("-local: unknown name %q (dsl, std, examples, synod)", name)
+			return nil, fmt.Errorf("-local: unknown name %q (dsl, std, examples, looks, synod, wasm, wasmexec, player)", name)
 		}
 		abs, err := filepath.Abs(p)
 		if err != nil {
@@ -106,14 +108,16 @@ func parseLocal(s string) (map[string]string, error) {
 	return out, nil
 }
 
-func (o options) fetcher() *Fetcher {
-	f := NewFetcher(o.depsDir, os.Stderr)
-	f.SkipRepos = map[string]bool{}
-	for name := range o.local {
-		f.SkipRepos[name] = true
+// localFor gives the -local overrides that apply to version v: only the
+// latest docs version takes them, so older versions still build from their pins.
+func (o options) localFor(deps *Deps, v *Version) map[string]string {
+	if v.Docs != deps.Latest {
+		return nil
 	}
-	return f
+	return o.local
 }
+
+func (o options) fetcher() *Fetcher { return NewFetcher(o.depsDir, os.Stderr) }
 
 func cmdFetch(o options) error {
 	deps, err := LoadDeps(o.deps)
@@ -122,6 +126,15 @@ func cmdFetch(o options) error {
 	}
 	f := o.fetcher()
 	for i := range deps.Versions {
+		v := &deps.Versions[i]
+		if len(o.localFor(deps, v)) > 0 && len(v.Placeholders()) > 0 {
+			fmt.Fprintf(os.Stderr, "fetch: skipping %s (placeholder pins, built with -local)\n", v.Docs)
+			continue
+		}
+		f.SkipRepos = map[string]bool{}
+		for name := range o.localFor(deps, v) {
+			f.SkipRepos[name] = true
+		}
 		if err := f.Fetch(&deps.Versions[i]); err != nil {
 			return fmt.Errorf("%s: %v", deps.Versions[i].Docs, err)
 		}
@@ -140,6 +153,7 @@ var builders = []struct {
 	{"design", buildDesign},
 	{"library", buildLibrary},
 	{"examples", buildExamples},
+	{"looks", buildLooks},
 	{"errors", buildErrors},
 	{"guides", buildGuides},
 	{"tribute", buildTribute},
@@ -157,7 +171,7 @@ func cmdBuild(o options) error {
 	}
 	f := o.fetcher()
 	for i := range deps.Versions {
-		c, err := NewCtx(o.root, o.out, deps, &deps.Versions[i], o.local, f, os.Stderr)
+		c, err := NewCtx(o.root, o.out, deps, &deps.Versions[i], o.localFor(deps, &deps.Versions[i]), f, os.Stderr)
 		if err != nil {
 			return err
 		}
@@ -181,7 +195,7 @@ func cmdCheck(o options) error {
 	}
 	f := o.fetcher()
 	for i := range deps.Versions {
-		c, err := NewCtx(o.root, o.out, deps, &deps.Versions[i], o.local, f, os.Stderr)
+		c, err := NewCtx(o.root, o.out, deps, &deps.Versions[i], o.localFor(deps, &deps.Versions[i]), f, os.Stderr)
 		if err != nil {
 			return err
 		}
