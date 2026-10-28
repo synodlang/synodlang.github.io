@@ -5,72 +5,95 @@ The Synod website and documentation, served at https://synodlang.github.io.
 [![ci](https://github.com/synodlang/synodlang.github.io/actions/workflows/ci.yml/badge.svg)](https://github.com/synodlang/synodlang.github.io/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-## What is here today
+## What this is
 
-- `index.html`: a placeholder home page with one sentence and two links.
-- `install/index.html`: the install page. It shows the commands for macOS, Linux, Windows and Go, direct download links filled from the latest release, and a note on unsigned binaries and `synod version`.
-- `install.sh`: the install script, served at https://synodlang.github.io/install.sh. It downloads the latest `synod` release for macOS or Linux, verifies the checksums and installs to `$HOME/.local/bin` without sudo. `SYNOD_VERSION` pins a version and `SYNOD_INSTALL` sets the directory.
-- `.nojekyll`: tells GitHub Pages to serve the files as they are.
+The site is a set of static pages that a small Go program builds from what the other repositories published. Nothing is copied by hand: the tutorial, the specification, the standard library pages and the diagnostic codes all come from tagged releases, so the site always matches a released Synod.
 
-The pages are plain HTML with inline CSS. There is no build step yet.
-
-## What is planned
-
-The full site is milestone M11 in the [roadmap](https://github.com/synodlang/dsl/blob/main/implementation/10-roadmap.md). It is built from `dsl` and `std` at deploy time, so it always matches a tagged specification. The plan is in [09-site-and-org.md](https://github.com/synodlang/dsl/blob/main/implementation/09-site-and-org.md) and [11-documentation.md](https://github.com/synodlang/dsl/blob/main/implementation/11-documentation.md).
-
-| Section | What it will be |
+| Section | What it is |
 | --- | --- |
-| Home | The icon, one sentence, a looping Raft election played live by the player, and three buttons: Start the tutorial, Install, See examples |
-| Tutorial | Fifteen chapters, bottom up, each a runnable program, ending with Raft leader election |
+| Home | The icon, one sentence, a looping Raft election played live by the player, and three buttons |
+| Tutorial | Fifteen chapters, bottom up, each step a runnable program, ending with Raft leader election |
 | Reference | The specification, one page per chapter |
 | Library | One page per standard library package, with a runnable example per phrase |
-| Examples | One page per example, with editable source and a Run button |
+| Examples | One page per example program, with editable source and a Run button |
 | Guides | Install the CLI, use the Mac app, write a look, publish a package, use Synod with an agent |
 | Errors | One page per diagnostic code: the message, a program that triggers it, the fix |
-| Design | Why Synod is the way it is |
+| Design | Why Synod is the way it is, and the decisions |
 | Tribute | Leslie Lamport's "The Part-Time Parliament" and the name |
 
-Every program on the site will have a Run button. It calls `synod.wasm` (check, run and scene) in the page and plays the result with the [player](https://github.com/synodlang/player), with diagnostics shown inline. There will be no recordings. Docs will be versioned by `dsl` tag, and search will be static.
+Every program has a Run button. It calls `synod.wasm` (check, run, format) in a Web Worker and plays the result with the [player](https://github.com/synodlang/player). There are no recordings. Docs are versioned: `/docs/v0.2/` is built from that version's pins and `/docs/` leads to the latest. Search is a static `search.json` per version.
 
-Those pieces depend on the WebAssembly build (M6) and the player (M7), which are not released yet.
+`install/` and `install.sh` are served as they are in this repository (the install page and the install script, https://synodlang.github.io/install.sh), and the build checks that the copies are byte-identical.
 
-## The organization
+## How the site is built
 
-| Repository | What it is | Status |
-| --- | --- | --- |
-| [dsl](https://github.com/synodlang/dsl) | The language specification and implementation guides | Spec v0.2 |
-| [compiler](https://github.com/synodlang/compiler) | The `synod` command: `fmt`, `check`, `run` | v0.2.2 released |
-| [std](https://github.com/synodlang/std) | The standard library packages | In use by the compiler |
-| [examples](https://github.com/synodlang/examples) | Sample programs and acceptance tests | Available |
-| [player](https://github.com/synodlang/player) | Canvas library that plays `scene.json` | Planned (M7) |
-| [mac-app](https://github.com/synodlang/mac-app) | The Mac app | Planned (M8, M9, M10) |
-| [agent-skills](https://github.com/synodlang/agent-skills) | Skills for coding agents | Planned (M10) |
-| **synodlang.github.io** (this repository) | The website and documentation | Install page live; rest planned (M11) |
-| [homebrew-tap](https://github.com/synodlang/homebrew-tap) | Homebrew formula for `synod` | Updated by compiler releases |
-| [scoop-bucket](https://github.com/synodlang/scoop-bucket) | Scoop manifest for `synod` | Updated by compiler releases |
-| [.github](https://github.com/synodlang/.github) | Organization profile and shared workflows | Available |
-
-## Preview locally
-
-The site is static files. From the repository root:
+`deps.json` says what a docs version is made of: the `dsl`, `std` and `examples` tags with their commits, and the `compiler` and `player` tags with the SHA-256 of each release asset used. The build is standard-library Go in `tools/build` (see its [README](tools/build/README.md)); there is no package manager in it.
 
 ```
-python3 -m http.server --directory .
+go run ./tools/build fetch                  # download and verify what deps.json pins into .deps/
+go run ./tools/build build -out _site       # build the site
+go run ./tools/build check -out _site       # check the built site
+go run ./tools/build serve -out _site       # serve it on http://127.0.0.1:8000
 ```
 
-Then open http://localhost:8000. Links to `/install/` and `/install.sh` work from the root of that server.
+- `fetch` checks every release asset against the release `SHA256SUMS` and the pin, checks the repositories out byte-exact at the pinned commit, and runs the pinned `synod` (`synod version` must match the pin).
+- `build` writes `_site/`. Highlighting, diagnostics, the Errors examples and the home scene come from the native pinned `synod`; editing in the browser uses the pinned `synod.wasm`.
+- `check` fails when an internal link or anchor does not resolve, when the Errors pages differ from the codes of `synod explain --json` or of the specification, when a tutorial chapter lacks a widget for a step, when the example pages differ from the table of `examples`, when a Library page lacks an example, when a widget's `data-program` is not a folder in its files, when there is a `.gif`, `.mp4`, `.webm`, `.mov`, `.apng` or `<video>`, when `install/` or `install.sh` differ from the source, or when an asset does not hash to its pin. Checks of content the pinned `dsl` does not have yet are skipped with a note.
 
-## Deployment
+### Preview your own changes
 
-GitHub Pages serves the `main` branch of this repository at https://synodlang.github.io. Merging to `main` publishes. The CI job checks line endings, trailing spaces and the final newline of `*.md`, `*.ts`, `*.js`, `*.json`, `*.css` and `*.html` files.
+To build from sibling checkouts instead of the pins, for example while writing a chapter in `dsl`:
+
+```
+go run ./tools/build build -out _site -local dsl=../dsl,std=../std,examples=../examples
+go run ./tools/build check -out _site -local dsl=../dsl,std=../std,examples=../examples
+go run ./tools/build serve -out _site
+```
+
+`-local` also takes `synod=path/to/synod` to use another compiler binary. Every page of a local build shows a "local build" banner. Run `fetch` once first (it still downloads the compiler, the wasm and the player).
+
+### Tests
+
+```
+gofmt -l . && go vet ./... && go test ./...
+```
+
+The browser tests are Playwright (pinned in `test/browser`). They read the pages of the built `_site`, so a new chapter or example is tested without editing them: on every tutorial and example page each widget is run, a line is edited and it is run again; an Errors page shows its diagnostic; search finds a page; `/docs/` leads to the latest docs.
+
+```
+cd test/browser
+npm ci
+npx playwright install chromium
+npx playwright test               # SITE_DIR=... to test another directory
+```
+
+### Deployment
+
+`.github/workflows/pages.yml` runs on every push to `main` (and by hand): it fetches, builds, checks and deploys `_site` with GitHub Actions to GitHub Pages. `.github/workflows/ci.yml` checks the text files (line endings, trailing spaces, final newline), `gofmt`, `go vet`, `go test`, builds and checks the site, and runs the browser tests.
 
 ## Design
 
-The site uses the brand from the language icon: navy ground `#151A2E`, pale `#EDE9E1`, amber accent `#F4A340`, and JetBrains Mono for the wordmark and code.
+The site uses the brand from the language icon: navy ground `#151A2E`, pale `#EDE9E1`, amber accent `#F4A340`, and JetBrains Mono (self-hosted) for the wordmark and code.
+
+## The organization
+
+| Repository | What it is |
+| --- | --- |
+| [dsl](https://github.com/synodlang/dsl) | The language specification, the tutorial and the implementation guides |
+| [compiler](https://github.com/synodlang/compiler) | The `synod` command and `synod.wasm` |
+| [std](https://github.com/synodlang/std) | The standard library packages |
+| [examples](https://github.com/synodlang/examples) | Sample programs and acceptance tests |
+| [player](https://github.com/synodlang/player) | Canvas library that plays `scene.json` |
+| [mac-app](https://github.com/synodlang/mac-app) | The Mac app |
+| [agent-skills](https://github.com/synodlang/agent-skills) | Skills for coding agents |
+| **synodlang.github.io** (this repository) | The website and documentation |
+| [homebrew-tap](https://github.com/synodlang/homebrew-tap) | Homebrew formula for `synod` |
+| [scoop-bucket](https://github.com/synodlang/scoop-bucket) | Scoop manifest for `synod` |
+| [.github](https://github.com/synodlang/.github) | Organization profile and shared workflows |
 
 ## Contributing
 
-Keep pages small and plain. Use LF line endings, no trailing spaces and a final newline. Changes to the language itself start as a pull request to [dsl](https://github.com/synodlang/dsl).
+Keep pages small and plain. Use LF line endings, no trailing spaces and a final newline. The text of the tutorial, the reference and the Library lives in `dsl` and `std`; changes to the language itself start as a pull request to [dsl](https://github.com/synodlang/dsl). To update the pins, change `deps.json` (tags, commits and asset hashes) and run `fetch`, which refuses anything that does not match.
 
 ## Why Synod
 

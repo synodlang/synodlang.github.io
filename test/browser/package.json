@@ -1,0 +1,17 @@
+{
+  "name": "synod-site-browser-tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Browser tests of the built site (_site): every tutorial step and example runs, edits and re-runs.",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  }
+}

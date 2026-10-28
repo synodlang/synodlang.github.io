@@ -34,8 +34,54 @@ jobs:
               echo "::error file=$f::missing newline at end of file"
               status=1
             fi
-          done < <(git ls-files -z -- '*.md' '*.astro' '*.ts' '*.js' '*.json' '*.css' '*.html' '*.sh')
+          done < <(git ls-files -z -- '*.md' '*.go' '*.mod' '*.ts' '*.js' '*.json' '*.css' '*.html' '*.sh' '*.yml')
           echo "Checked $count file(s)."
           exit $status
 
-  # Later: site build (actions/setup-node@v4, npm ci, npm run build) and GitHub Pages deploy.
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - name: gofmt
+        shell: bash
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needed:"
+            echo "$unformatted"
+            exit 1
+          fi
+      - run: go vet ./...
+      - run: go test ./...
+      - name: Fetch the pinned dependencies
+        run: go run ./tools/build fetch
+      - name: Build the site
+        run: go run ./tools/build build -out _site
+      - name: Check the site
+        run: go run ./tools/build check -out _site
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: test/browser/package-lock.json
+      - name: Install the browser tests
+        working-directory: test/browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Run the browser tests
+        working-directory: test/browser
+        run: npx playwright test
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            test/browser/playwright-report
+            test/browser/test-results
+          if-no-files-found: ignore
+          retention-days: 7
