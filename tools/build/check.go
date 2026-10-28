@@ -328,6 +328,7 @@ func resolveLink(out, rel, href string, self *htmlInfo, info func(abs string) *h
 // siteWidget is one program widget of a page.
 type siteWidget struct {
 	Program, FilesID, FilesURL, Prefix, Op string
+	VendorURL, VendorPrefix                string
 }
 
 // checkPageWidgets lists the program widgets of an HTML page, in order.
@@ -344,6 +345,10 @@ func checkPageWidgets(page string) []siteWidget {
 				w.FilesID = strings.TrimPrefix(v, "#")
 			case "files-url":
 				w.FilesURL = v
+			case "vendor-url":
+				w.VendorURL = v
+			case "vendor-prefix":
+				w.VendorPrefix = v
 			case "files-prefix":
 				w.Prefix = v
 			case "op":
@@ -353,6 +358,29 @@ func checkPageWidgets(page string) []siteWidget {
 		out = append(out, w)
 	}
 	return out
+}
+
+// readFilesURL reads the JSON file map a data-files-url or data-vendor-url
+// names (assets/… is relative to the version, /… to the site, the rest to the page).
+func readFilesURL(u, pageAbs, out, docs string) (map[string]string, error) {
+	var file string
+	switch {
+	case strings.HasPrefix(u, "assets/"):
+		file = filepath.Join(docs, filepath.FromSlash(u))
+	case strings.HasPrefix(u, "/"):
+		file = filepath.Join(out, filepath.FromSlash(u))
+	default:
+		file = filepath.Join(filepath.Dir(pageAbs), filepath.FromSlash(u))
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return nil, fmt.Errorf("files-url %s: %v", u, err)
+	}
+	var all map[string]string
+	if err := json.Unmarshal(data, &all); err != nil {
+		return nil, fmt.Errorf("files-url %s is not JSON: %v", u, err)
+	}
+	return all, nil
 }
 
 // widgetFiles returns the file paths a widget would run with.
@@ -371,26 +399,25 @@ func widgetFiles(w siteWidget, page, pageAbs, out, docs string) ([]string, error
 			return nil, fmt.Errorf("no <script id=%q> with the files", w.FilesID)
 		}
 	case w.FilesURL != "":
-		var file string
-		switch {
-		case strings.HasPrefix(w.FilesURL, "assets/"):
-			file = filepath.Join(docs, filepath.FromSlash(w.FilesURL))
-		case strings.HasPrefix(w.FilesURL, "/"):
-			file = filepath.Join(out, filepath.FromSlash(w.FilesURL))
-		default:
-			file = filepath.Join(filepath.Dir(pageAbs), filepath.FromSlash(w.FilesURL))
-		}
-		data, err := os.ReadFile(file)
-		if err != nil {
-			return nil, fmt.Errorf("files-url %s: %v", w.FilesURL, err)
-		}
-		if err := json.Unmarshal(data, &all); err != nil {
-			return nil, fmt.Errorf("files-url %s is not JSON: %v", w.FilesURL, err)
+		var err error
+		if all, err = readFilesURL(w.FilesURL, pageAbs, out, docs); err != nil {
+			return nil, err
 		}
 	default:
 		return nil, fmt.Errorf("no files")
 	}
 	var names []string
+	if w.VendorURL != "" { // the shared vendored module, merged under VendorPrefix
+		shared, err := readFilesURL(w.VendorURL, pageAbs, out, docs)
+		if err != nil {
+			return nil, err
+		}
+		for k := range shared {
+			if _, ok := all[w.VendorPrefix+k]; !ok {
+				names = append(names, w.VendorPrefix+k)
+			}
+		}
+	}
 	for k := range all {
 		if w.Prefix == "" || strings.HasPrefix(k, w.Prefix) || k == "synod.mod" || k == "synod.sum" {
 			names = append(names, k)

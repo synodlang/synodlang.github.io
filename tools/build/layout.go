@@ -85,15 +85,17 @@ func (l *Layout) Render(c *Ctx, p *Page) ([]byte, error) {
 
 // ProgramData describes one program widget (plan §3, widget contract).
 type ProgramData struct {
-	ID          string            // unique on the page, "f1"
-	Program     string            // folder to run or check, "raft"
-	Op          string            // "run" or "check"
-	Files       map[string]string // inline files: slash path to text; empty when FilesURL is set
-	FilesURL    string            // assets/examples-v0.2.1.json, instead of inline Files
-	FilesPrefix string            // path prefix of the program inside the files
-	Show        []string          // files shown as tabs, in order
-	Predict     bool
-	Code        []CodeFile // highlighted views of the shown files
+	ID           string            // unique on the page, "f1"
+	Program      string            // folder to run or check, "raft"
+	Op           string            // "run" or "check"
+	Files        map[string]string // inline files: slash path to text; empty when FilesURL is set
+	FilesURL     string            // assets/examples-v0.2.1.json, instead of inline Files
+	FilesPrefix  string            // path prefix of the program inside the files
+	VendorURL    string            // shared JSON merged into the files under VendorPrefix
+	VendorPrefix string            // vendor/github.com/synodlang/examples@v0.2.1/
+	Show         []string          // files shown as tabs, in order
+	Predict      bool
+	Code         []CodeFile // highlighted views of the shown files
 }
 
 // CodeFile is one highlighted file of a widget.

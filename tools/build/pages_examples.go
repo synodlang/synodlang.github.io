@@ -79,7 +79,7 @@ func buildExamples(c *Ctx) error {
 			Title:       r.Title(),
 			Section:     "examples",
 			Description: plainText(r.Topic),
-			Body:        body,
+			Body:        linkBody(c, c.URL("examples/"+r.Folder+"/"), body),
 		}); err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func buildExamples(c *Ctx) error {
 		Title:       "Examples",
 		Section:     "examples",
 		Description: "Protocols and systems written in Synod that you can run, edit and break.",
-		Body:        examplesIndex(c, rows),
+		Body:        linkBody(c, c.URL("examples/"), examplesIndex(c, rows)),
 	})
 }
 
@@ -294,4 +294,49 @@ func examplesIndex(c *Ctx, rows []exampleRow) template.HTML {
 // plainText strips Markdown code marks and emphasis from a table cell.
 func plainText(s string) string {
 	return strings.NewReplacer("`", "", "**", "", "*", "").Replace(s)
+}
+
+var exampleFilesCache = map[string]map[string]string{}
+
+// shareVendor moves the vendored copy of the examples module out of the
+// inline files of d: files under vendor/github.com/synodlang/examples@<tag>/
+// whose text equals the module's own file are dropped and d.VendorURL names
+// the shared assets/examples-<tag>.json instead, which the widget merges
+// back under d.VendorPrefix. Other vendored files stay inline.
+func shareVendor(c *Ctx, d *ProgramData) error {
+	prefix := "vendor/github.com/synodlang/examples@" + c.V.Examples.Tag + "/"
+	has := false
+	for n := range d.Files {
+		if strings.HasPrefix(n, prefix) {
+			has = true
+			break
+		}
+	}
+	if !has {
+		return nil
+	}
+	src := c.Source("examples")
+	mod, ok := exampleFilesCache[src]
+	if !ok {
+		var err error
+		if mod, err = exampleFiles(src); err != nil {
+			return err
+		}
+		exampleFilesCache[src] = mod
+	}
+	files := make(map[string]string, len(d.Files))
+	for n, text := range d.Files {
+		files[n] = text
+	}
+	d.Files = files
+	for n, text := range files {
+		if rest, ok := strings.CutPrefix(n, prefix); ok {
+			if m, ok := mod[rest]; ok && m == text {
+				delete(files, n)
+			}
+		}
+	}
+	d.VendorURL = "assets/examples-" + c.V.Examples.Tag + ".json"
+	d.VendorPrefix = prefix
+	return nil
 }

@@ -4,6 +4,7 @@
 //   <meta name="synod" content='{"assets":"…/assets/","wasm":"…","wasmExec":"…","player":"…","errors":"…/errors/"}'>
 //   <div class="synod-program" data-program="raft" data-op="run|check"
 //        data-files="#f1" | data-files-url="assets/examples-v0.2.1.json" [data-files-prefix=""]
+//        [data-vendor-url="assets/examples-v0.2.1.json" data-vendor-prefix="vendor/github.com/synodlang/examples@v0.2.1/"]
 //        data-show="raft/raft.synod raft/demo.synod" data-predict="on|off">
 //     <script type="application/json" id="f1">{"path":"text",…}</script>
 //     <pre class="synod" data-file="raft/raft.synod" data-changed="3,4"><code>…</code></pre>
@@ -175,7 +176,21 @@ class Widget {
     this.build();
   }
 
+  // The files of the program, plus the shared vendored module when the widget
+  // names one: every file of data-vendor-url is added under data-vendor-prefix
+  // (the widget's own files win on a clash).
   async loadFiles() {
+    const own = await this.loadOwnFiles();
+    const vurl = this.root.dataset.vendorUrl;
+    if (!vurl) return own;
+    const vprefix = this.root.dataset.vendorPrefix || "";
+    const shared = await fetchFiles(filesUrl(vurl));
+    const out = {};
+    for (const [k, v] of Object.entries(shared)) out[vprefix + k] = v;
+    return { ...out, ...own };
+  }
+
+  async loadOwnFiles() {
     const root = this.root;
     const sel = root.dataset.files;
     if (sel) {

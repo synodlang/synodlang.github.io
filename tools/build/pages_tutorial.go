@@ -122,7 +122,7 @@ func (t *tutorial) indexPage() error {
 	if err != nil {
 		return err
 	}
-	return c.AddPage(&Page{URL: pageURL, Title: "Learn Synod", Section: "tutorial", Description: doc.excerpt(200), Body: body, Toc: tocOf(doc, mdOptions{})})
+	return c.AddPage(&Page{URL: pageURL, Title: "Learn Synod", Section: "tutorial", Description: doc.excerpt(200), Body: linkBody(c, pageURL, body), Toc: tocOf(doc, mdOptions{})})
 }
 
 func (t *tutorial) chapterPage(i int, ch tutChapter) error {
@@ -163,7 +163,7 @@ func (t *tutorial) chapterPage(i int, ch tutChapter) error {
 	sb.WriteString(t.pager(i))
 	return c.AddPage(&Page{
 		URL: pageURL, Title: ch.title, Section: "tutorial",
-		Description: ch.doc.excerpt(200), Body: template.HTML(sb.String()), Toc: tocOf(ch.doc, mdOptions{}),
+		Description: ch.doc.excerpt(200), Body: linkBody(c, pageURL, template.HTML(sb.String())), Toc: tocOf(ch.doc, mdOptions{}),
 	})
 }
 
@@ -394,6 +394,9 @@ func (t *tutorial) step(ch tutChapter, k int, program, id string) (template.HTML
 		d.Code = append(d.Code, cf)
 	}
 	t.prev = files
+	if err := shareVendor(c, &d); err != nil {
+		return "", err
+	}
 	w, err := c.Layout.Program(d)
 	if err != nil {
 		return "", err

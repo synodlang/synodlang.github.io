@@ -418,5 +418,8 @@ func (s *refSnippets) widget(kind, pkg, text string) (template.HTML, error) {
 	if kind == "library" {
 		d.Program, d.Op, d.Predict = pkg, "check", false
 	}
+	if err := shareVendor(s.c, &d); err != nil {
+		return "", err
+	}
 	return c.Layout.Program(d)
 }

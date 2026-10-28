@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"html"
+	"html/template"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -404,6 +405,11 @@ func linkifyHTML(c *Ctx, page, in string) string {
 		}
 	}
 	return out.String()
+}
+
+// linkBody is linkifyHTML for a page body.
+func linkBody(c *Ctx, page string, body template.HTML) template.HTML {
+	return template.HTML(linkifyHTML(c, page, string(body)))
 }
 
 // codeLink gives the link of the code span text; tail is the "§3.3" text

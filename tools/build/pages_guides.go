@@ -71,7 +71,7 @@ func buildGuides(c *Ctx) error {
 			return err
 		}
 		ex := doc.excerpt(200)
-		if err := c.AddPage(&Page{URL: pageURL, Title: title, Section: "guides", Description: ex, Body: body, Toc: tocOf(doc, opts)}); err != nil {
+		if err := c.AddPage(&Page{URL: pageURL, Title: title, Section: "guides", Description: ex, Body: linkBody(c, pageURL, body), Toc: tocOf(doc, opts)}); err != nil {
 			return err
 		}
 		list.WriteString(`<li><a href="` + html.EscapeString(pageURL) + `">` + html.EscapeString(title) + `</a>`)
@@ -81,5 +81,5 @@ func buildGuides(c *Ctx) error {
 		list.WriteString("</li>\n")
 	}
 	body := template.HTML("<h1 id=\"guides\">Guides</h1>\n<p>Task pages: do one thing from start to end.</p>\n<ul class=\"guide-list\">\n" + list.String() + "</ul>\n")
-	return c.AddPage(&Page{URL: c.URL("guides/"), Title: "Guides", Section: "guides", Description: "Task pages for the Synod CLI, the Mac app, looks, packages and agents.", Body: body})
+	return c.AddPage(&Page{URL: c.URL("guides/"), Title: "Guides", Section: "guides", Description: "Task pages for the Synod CLI, the Mac app, looks, packages and agents.", Body: linkBody(c, c.URL("guides/"), body)})
 }

@@ -557,7 +557,7 @@ func buildLibrary(c *Ctx) error {
 			}
 		}
 
-		pg := &Page{URL: page, Title: p, Section: "library", Description: pkg.Title, Body: template.HTML(b.String()), Toc: toc}
+		pg := &Page{URL: page, Title: p, Section: "library", Description: pkg.Title, Body: linkBody(c, page, template.HTML(b.String())), Toc: toc}
 		if err := c.AddPage(pg); err != nil {
 			return err
 		}
@@ -572,7 +572,7 @@ func buildLibrary(c *Ctx) error {
 	}
 	b.WriteString("</tbody>\n</table>\n")
 	return c.AddPage(&Page{URL: c.URL("library/"), Title: "Library", Section: "library",
-		Description: "Every phrase of the standard library, with runnable examples.", Body: template.HTML(b.String())})
+		Description: "Every phrase of the standard library, with runnable examples.", Body: linkBody(c, c.URL("library/"), template.HTML(b.String()))})
 }
 
 func libFields(b *strings.Builder, fs []docField) {

@@ -207,7 +207,7 @@ func buildErrors(c *Ctx) error {
 		}
 		b.WriteString("</nav>\n")
 		toc := []TocItem{{"example", "Example", 2}, {"diagnostic", "Diagnostic", 2}, {"fix", "Fix", 2}}
-		if err := c.AddPage(&Page{URL: url, Title: e.Code, Section: "errors", Description: e.Summary, Body: template.HTML(b.String()), Toc: toc}); err != nil {
+		if err := c.AddPage(&Page{URL: url, Title: e.Code, Section: "errors", Description: e.Summary, Body: linkBody(c, url, template.HTML(b.String())), Toc: toc}); err != nil {
 			return err
 		}
 	}
@@ -229,5 +229,5 @@ func buildErrors(c *Ctx) error {
 		b.WriteString("</tbody>\n</table>\n")
 	}
 	return c.AddPage(&Page{URL: c.URL("errors/"), Title: "Errors", Section: "errors",
-		Description: "Every diagnostic code with a program that triggers it and the fix.", Body: template.HTML(b.String())})
+		Description: "Every diagnostic code with a program that triggers it and the fix.", Body: linkBody(c, c.URL("errors/"), template.HTML(b.String()))})
 }

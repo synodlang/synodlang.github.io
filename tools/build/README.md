@@ -57,3 +57,25 @@ page with that URL first.
   registers; `c.WriteDocs("assets/x.json", data)` writes a file under the version;
   `c.Layout.Program(ProgramData{...})` renders a program widget.
 - `c.IsLatest()` and `c.IsLocal()`; `c.V` is the version entry, `c.Pages` the registry.
+
+## Program widget contract
+
+```html
+<meta name="synod" content='{"assets":"/docs/v0.2/assets/","wasm":"…","wasmExec":"…","player":"…","errors":"/docs/v0.2/errors/"}'>
+<div class="synod-program" data-program="raft" data-op="run|check" data-show="raft/raft.synod" data-predict="on|off"
+     data-files="#f1" | data-files-url="assets/examples-v0.2.1.json" [data-files-prefix="raft/"]
+     [data-vendor-url="assets/examples-v0.2.1.json" data-vendor-prefix="vendor/github.com/synodlang/examples@v0.2.1/"]>
+  <script type="application/json" id="f1">{"path":"text"}</script>
+  <pre class="synod" data-file="raft/raft.synod" data-changed="3,4"><code>…</code></pre>
+</div>
+```
+
+The program's files come from `data-files` (inline JSON, a `<script>` id) or
+`data-files-url` (a shared JSON file; `data-files-prefix` keeps only the files under the
+prefix plus `synod.mod` and `synod.sum`). `data-vendor-url` adds a second shared JSON
+file: every file of it is merged under `data-vendor-prefix`, the widget's own files
+winning on a clash. The build uses it for the vendored copy of the examples module in
+tutorial steps and Reference snippets that import it (`shareVendor`, pages_examples.go),
+so the module is downloaded once per page (`assets/examples-<tag>.json`, cached) instead
+of being inlined into every widget. Vendored files that differ from the module stay inline.
+`check` resolves both sources when it verifies that a widget's program is a folder of its files.
