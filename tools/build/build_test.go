@@ -44,10 +44,10 @@ func TestParseDepsRejects(t *testing.T) {
 		t.Fatal(err)
 	}
 	for name, edit := range map[string][2]string{
-		"short commit": {"f994b9ef5b26619b88f7d2e0458a9fda57d6a2e0", "f994b9"},
+		"short commit": {"8d8c8b54e26565737c805517172e3911696b511a", "8d8c8b"},
 		"bad latest":   {`"latest": "v0.2"`, `"latest": "v0.3"`},
 		"unknown":      {`"latest"`, `"lastest"`},
-		"short sha":    {"56e81b456582bd02845bbbe50b3586fc74cefe689e7e5baf29464501098ffb78", "56e8"},
+		"short sha":    {"d10da4ba04ce33aaa79f1705428cb7ab6f8463764dc719632ede0e4916a11433", "d10d"},
 	} {
 		bad := strings.Replace(string(good), edit[0], edit[1], 1)
 		if bad == string(good) {

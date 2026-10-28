@@ -32,20 +32,12 @@ type explainCode struct {
 	} `json:"fix"`
 }
 
-// errImpliedMod is the synod.mod that compilers up to v0.2.6 leave out of
-// example.files. Decision 111: from v0.2.7 on, example.files holds every file
-// the example is run with. This fallback is a compatibility shim; REMOVE it
-// once the pinned compiler is v0.2.7 or later.
-const errImpliedMod = "module example.com/explain\nsynod 0.2\n"
-
-// errFiles returns the files of an entry's example, synod.mod included.
+// errFiles returns the files of an entry's example. Decision 111: example.files
+// holds every file the example is run with, synod.mod included.
 func errFiles(e explainCode) map[string]string {
 	files := map[string]string{}
 	for p, t := range e.Example.Files {
 		files[p] = t
-	}
-	if _, ok := files["synod.mod"]; !ok {
-		files["synod.mod"] = errImpliedMod
 	}
 	return files
 }
