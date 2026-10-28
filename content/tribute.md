@@ -8,7 +8,7 @@ who he is, what he wrote, and why we chose the name.
 In 1990 Leslie Lamport submitted a paper called "The Part-Time Parliament". It
 appeared in print in 1998, in *ACM Transactions on Computer Systems* (volume 16,
 issue 2, pages 133 to 169). It does not read like a usual systems paper. It tells
-the story of the parliament of Paxos, an invented island of ancient Greece, whose
+the story of an invented parliament on Paxos, a Greek island, whose
 legislators wander in and out of the chamber, yet must still agree on one decree
 at a time and never contradict an earlier one.
 
@@ -38,7 +38,7 @@ chosen value never changes.
   of the ACM*, 1978) gave us the vocabulary of events, causality and logical time.
 - TLA+ is his specification language for describing and checking systems before
   they are built.
-- In 2013 he received the ACM A.M. Turing Award for fundamental contributions to
+- He received the 2013 ACM A.M. Turing Award, announced in March 2014, for fundamental contributions to
   the theory and practice of distributed and concurrent systems.
 
 We are grateful for this work. If Synod makes one of its ideas easier to watch and
@@ -52,5 +52,5 @@ understand, it has done its job.
 3. Leslie Lamport. "Time, Clocks, and the Ordering of Events in a Distributed
    System". *Communications of the ACM* 21(7), July 1978, 558-565.
 4. [Leslie Lamport's own page of his writings](https://lamport.azurewebsites.net/pubs/pubs.html),
-   where his papers can be read, with his notes on how each came to be.
-5. [ACM A.M. Turing Award 2013](https://amturing.acm.org/award_winners/lamport_1205376.cfm).
+   where his papers can be read, with his notes on many of them.
+5. [ACM A.M. Turing Award 2013](https://awards.acm.org/award-recipients/lamport_1205376).
