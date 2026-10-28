@@ -30,6 +30,14 @@ type Ctx struct {
 
 // NewCtx makes the context of docs version v.
 func NewCtx(root, out string, deps *Deps, v *Version, local map[string]string, fetch *Fetcher, log io.Writer) (*Ctx, error) {
+	// Commands run with their own working directory, so every path the
+	// context hands out is absolute.
+	var err error
+	for _, p := range []*string{&root, &out, &fetch.Dir} {
+		if *p, err = filepath.Abs(*p); err != nil {
+			return nil, err
+		}
+	}
 	l, err := LoadLayout(filepath.Join(root, "templates"))
 	if err != nil {
 		return nil, err
@@ -38,6 +46,9 @@ func NewCtx(root, out string, deps *Deps, v *Version, local map[string]string, f
 	bin := fetch.SynodPath(v)
 	if p, ok := local["synod"]; ok {
 		bin = p
+	}
+	if bin, err = filepath.Abs(bin); err != nil {
+		return nil, err
 	}
 	c.Synod = &Synod{Bin: bin}
 	return c, nil

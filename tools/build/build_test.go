@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestParseDepsRepoFile(t *testing.T) {
@@ -252,5 +253,49 @@ func TestSynodHelpers(t *testing.T) {
 	}
 	if _, err := s.must("", nil, "check", "/no/such/dir"); err == nil || !strings.Contains(err.Error(), "exit") {
 		t.Errorf("failure should report the exit code and output: %v", err)
+	}
+}
+
+func TestCtxPathsAbsolute(t *testing.T) {
+	d, err := LoadDeps("../../deps.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f := &Fetcher{Dir: ".deps"}
+	c, err := NewCtx("../..", "_site", d, &d.Versions[0], nil, f, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range []string{c.Synod.Bin, c.Root, c.Out, c.Source("dsl")} {
+		if !filepath.IsAbs(p) {
+			t.Errorf("%q is not absolute", p)
+		}
+	}
+}
+
+func TestFetchLockSerialises(t *testing.T) {
+	f := &Fetcher{Dir: t.TempDir()}
+	unlock, err := f.lock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := make(chan struct{})
+	go func() {
+		u, err := f.lock()
+		if err == nil {
+			u()
+		}
+		close(got)
+	}()
+	select {
+	case <-got:
+		t.Fatal("second lock did not wait")
+	case <-time.After(300 * time.Millisecond):
+	}
+	unlock()
+	select {
+	case <-got:
+	case <-time.After(5 * time.Second):
+		t.Fatal("second lock never acquired")
 	}
 }

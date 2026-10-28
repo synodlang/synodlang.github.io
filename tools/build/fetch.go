@@ -39,6 +39,9 @@ type Fetcher struct {
 
 // NewFetcher returns a Fetcher for dir that talks to github.com.
 func NewFetcher(dir string, log io.Writer) *Fetcher {
+	if abs, err := filepath.Abs(dir); err == nil {
+		dir = abs
+	}
 	return &Fetcher{Dir: dir, Base: "https://github.com", Log: log, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH}
 }
 
@@ -69,6 +72,11 @@ func (f *Fetcher) RepoPath(v *Version, repo string) string {
 // Fetch makes Dir hold everything version v pins, verified. Files that
 // already match their pin are not downloaded again.
 func (f *Fetcher) Fetch(v *Version) error {
+	unlock, err := f.lock()
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	if err := f.fetchRelease(v, "compiler", v.Compiler); err != nil {
 		return err
 	}
@@ -279,27 +287,64 @@ func (f *Fetcher) checkout(v *Version, name string, r Repo) error {
 	if err := os.MkdirAll(filepath.Dir(dir), 0o755); err != nil {
 		return err
 	}
+	// Clone beside the target and rename, so a failed or interrupted clone
+	// never leaves a half-made checkout where a later fetch trusts it.
+	tmp, err := os.MkdirTemp(filepath.Dir(dir), ".clone-"+name+"-")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmp)
+	clone := filepath.Join(tmp, name)
 	cfg := []string{"-c", "core.autocrlf=false", "-c", "core.eol=lf", "-c", "core.symlinks=false", "-c", "core.longpaths=true"}
 	url := f.Base + "/synodlang/" + name + ".git"
-	if out, err := gitOut("", append(cfg, "clone", "--quiet", "--depth", "1", "--no-tags", "--no-checkout", "--branch", r.Tag, "--", url, dir)...); err != nil {
+	if out, err := gitOut("", append(cfg, "clone", "--quiet", "--depth", "1", "--no-tags", "--no-checkout", "--branch", r.Tag, "--", url, clone)...); err != nil {
 		return fmt.Errorf("%s: git clone of %s at %s failed: %s", name, url, r.Tag, out)
 	}
-	attrs := filepath.Join(dir, ".git", "info", "attributes")
+	attrs := filepath.Join(clone, ".git", "info", "attributes")
 	if err := writeFile(attrs, []byte("* -text -eol -ident -filter\n"), 0o644); err != nil {
 		return err
 	}
-	if out, err := gitOut(dir, append(cfg, "checkout", "--quiet", "HEAD")...); err != nil {
+	if out, err := gitOut(clone, append(cfg, "checkout", "--quiet", "HEAD")...); err != nil {
 		return fmt.Errorf("%s: git checkout of %s failed: %s", name, r.Tag, out)
 	}
-	head, err := gitOut(dir, "rev-parse", "HEAD")
+	head, err := gitOut(clone, "rev-parse", "HEAD")
 	if err != nil {
 		return fmt.Errorf("%s: cannot read the commit of %s: %s", name, r.Tag, head)
 	}
 	if head != r.Commit {
-		os.RemoveAll(dir)
 		return fmt.Errorf("%s: tag %s is commit %s, deps.json pins %s", name, r.Tag, head, r.Commit)
 	}
-	return nil
+	return os.Rename(clone, dir)
+}
+
+// lock takes Dir/.lock, waiting while another fetch holds it. A lock older
+// than ten minutes is taken to be left by a crashed run.
+func (f *Fetcher) lock() (func(), error) {
+	if err := os.MkdirAll(f.Dir, 0o755); err != nil {
+		return nil, err
+	}
+	path := filepath.Join(f.Dir, ".lock")
+	deadline := time.Now().Add(15 * time.Minute)
+	for {
+		fh, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
+		if err == nil {
+			fmt.Fprintf(fh, "%d\n", os.Getpid())
+			fh.Close()
+			return func() { os.Remove(path) }, nil
+		}
+		if !os.IsExist(err) {
+			return nil, err
+		}
+		if info, serr := os.Stat(path); serr == nil && time.Since(info.ModTime()) > 10*time.Minute {
+			os.Remove(path)
+			continue
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("%s is held by another fetch", path)
+		}
+		f.logf("waiting for another fetch (%s)", path)
+		time.Sleep(time.Second)
+	}
 }
 
 // gitOut runs git in dir (empty means the current one) and returns its

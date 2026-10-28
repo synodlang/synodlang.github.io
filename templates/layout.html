@@ -16,8 +16,8 @@
 {{range .Nav}}<a href="{{.URL}}"{{if .Active}} aria-current="page"{{end}}>{{.Label}}</a>
 {{end}}</nav>
 <form class="search" role="search" onsubmit="return false">
-<input type="search" id="site-search" placeholder="Search the docs" aria-label="Search the docs" data-search-url="{{.DocsURL}}search.json" autocomplete="off">
-<ol id="search-results" hidden></ol>
+<input type="search" id="site-search" data-synod-search placeholder="Search the docs" aria-label="Search the docs" data-search-url="{{.DocsURL}}search.json" autocomplete="off">
+<div id="search-results" data-synod-search-results hidden></div>
 </form>
 <label class="version">
 <span class="visually-hidden">Docs version</span>
@@ -31,8 +31,8 @@
 <p>Synod is open source. <a href="https://github.com/synodlang">github.com/synodlang</a> · <a href="{{.DocsURL}}design/">Design</a> · <a href="/tribute/">Tribute</a></p>
 <p class="pins">Docs {{.Docs}}: {{.Release}}</p>
 </footer>
-<script src="{{.Assets}}js/search.js" defer></script>
-<script src="{{.Assets}}js/program.js" defer></script>
+<script type="module" src="{{.Assets}}js/search.js"></script>
+<script type="module" src="{{.Assets}}js/program.js"></script>
 <script>
 (function () {
   var sel = document.getElementById("version-switch");
