@@ -106,7 +106,7 @@ type CodeFile struct {
 // programView adds what the template cannot compute.
 type programView struct {
 	ProgramData
-	FilesJSON template.HTML
+	FilesJSON template.JS
 	ShowList  string
 }
 
@@ -118,7 +118,7 @@ func (l *Layout) Program(d ProgramData) (template.HTML, error) {
 		if err != nil {
 			return "", err
 		}
-		v.FilesJSON = template.HTML(data)
+		v.FilesJSON = template.JS(data)
 	}
 	for i, s := range d.Show {
 		if i > 0 {

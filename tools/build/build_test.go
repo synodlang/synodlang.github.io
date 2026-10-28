@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -297,5 +298,34 @@ func TestFetchLockSerialises(t *testing.T) {
 	case <-got:
 	case <-time.After(5 * time.Second):
 		t.Fatal("second lock never acquired")
+	}
+}
+
+func TestProgramFilesJSON(t *testing.T) {
+	d, err := LoadDeps("../../deps.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c, err := NewCtx("../..", t.TempDir(), d, &d.Versions[0], nil, &Fetcher{Dir: t.TempDir()}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	files := map[string]string{"p/main.synod": "# package main\n</script><b>&\"q\"\n", "p/synod.mod": "module x\n"}
+	html, err := c.Layout.Program(ProgramData{ID: "f1", Program: "p", Op: "run", Files: files, Show: []string{"p/main.synod"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(html)
+	start := strings.Index(s, `id="f1">`) + len(`id="f1">`)
+	end := strings.Index(s[start:], "</script>")
+	if start < len(`id="f1">`) || end < 0 {
+		t.Fatalf("no script body in %s", s)
+	}
+	var got map[string]string
+	if err := json.Unmarshal([]byte(s[start:start+end]), &got); err != nil {
+		t.Fatalf("script body is not the JSON object: %v\n%s", err, s)
+	}
+	if got["p/main.synod"] != files["p/main.synod"] || len(got) != 2 {
+		t.Errorf("got %v", got)
 	}
 }
