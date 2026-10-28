@@ -121,13 +121,13 @@ func buildDocsHome(c *Ctx) error {
 	}
 	var b strings.Builder
 	b.WriteString(string(intro))
-	b.WriteString("\n<ul class=\"cards\" style=\"list-style:none;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));gap:1rem\">\n")
+	b.WriteString("\n<ul class=\"cards\">\n")
 	for _, k := range cards {
 		url := c.URL(k.Path)
 		if strings.HasPrefix(k.Path, "/") {
 			url = k.Path
 		}
-		fmt.Fprintf(&b, "<li style=\"border:1px solid var(--line);border-radius:8px;padding:1rem;background:var(--panel)\"><h2 style=\"margin:0 0 .4rem;font-size:1.1rem\"><a href=\"%s\">%s</a></h2><p style=\"margin:0\">%s</p></li>\n",
+		fmt.Fprintf(&b, "<li><h2><a href=\"%s\">%s</a></h2><p>%s</p></li>\n",
 			html.EscapeString(url), html.EscapeString(k.Title), html.EscapeString(k.Text))
 	}
 	b.WriteString("</ul>\n")
