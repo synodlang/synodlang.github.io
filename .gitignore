@@ -1,3 +1,5 @@
 .deps/
 _site/
 test/browser/node_modules/
+tools/build/build
+/build
