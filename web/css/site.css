@@ -676,6 +676,9 @@ table.theme-values { font-size: .82rem; }
 table.theme-values td, table.theme-values th { white-space: nowrap; }
 .looks-pkg { margin: 1.5rem 0 2.5rem; }
 .looks-source summary, .looks-values summary { cursor: pointer; color: var(--muted); margin: .5em 0; }
+/* A gallery page uses the full width; its intro paragraphs keep the reading measure. */
+.page > article:has(.gallery) { max-width: none; }
+.page > article:has(.gallery) > p { max-width: var(--measure); }
 .gal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: 1rem; margin: 1rem 0 2rem; }
 .gal-cell { margin: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); }
 .gal-cell canvas { display: block; width: 100%; aspect-ratio: 16 / 10; background: #151a2e; }
