@@ -35,39 +35,38 @@
     {
       "docs": "v0.3",
       "dsl": {
-        "tag": "v0.3.0",
-        "commit": "0000000000000000000000000000000000000000"
+        "tag": "v0.3.1",
+        "commit": "3ae05afc6e3a40f07ca17d6929322e2b68dc7ee5"
       },
       "std": {
         "tag": "v0.3.0",
-        "commit": "0000000000000000000000000000000000000000"
+        "commit": "ee3322b30ac050e221f58af36681b5adf8722698"
       },
       "examples": {
         "tag": "v0.3.0",
-        "commit": "0000000000000000000000000000000000000000"
+        "commit": "5f3f4a795902120710d5a7ff11ed881897e0ee7e"
       },
       "looks": {
         "tag": "v0.3.0",
-        "commit": "0000000000000000000000000000000000000000"
+        "commit": "3afd2a854e746a7a102a3553fda50620dd1645fd"
       },
       "compiler": {
         "tag": "v0.3.0",
         "assets": {
-          "synod-v0.3.0-linux-amd64.tar.gz": "0000000000000000000000000000000000000000000000000000000000000000",
-          "synod-v0.3.0-darwin-universal.tar.gz": "0000000000000000000000000000000000000000000000000000000000000000",
-          "synod-v0.3.0.wasm": "0000000000000000000000000000000000000000000000000000000000000000",
-          "synod-v0.3.0-wasm_exec.js": "0000000000000000000000000000000000000000000000000000000000000000"
+          "synod-v0.3.0-linux-amd64.tar.gz": "5ca8feeba29a2034905e0f4cff11afac228bcefde7cb8c5460c094c4fea8acc5",
+          "synod-v0.3.0-darwin-universal.tar.gz": "9943c89705f00b2ef7d9aa5d52dac22f5982a7361adc1c17e57e43ed2a9aa0e1",
+          "synod-v0.3.0.wasm": "de12f4d433e70382beb3b08ff3e35054cc8d93255e9bc18a7cc8d8362e89a2aa",
+          "synod-v0.3.0-wasm_exec.js": "45ce9dfe7211247544ab6f4268eb8cb5b6f3d5ae602dc3b51447b7eada99c229"
         }
       },
       "player": {
         "tag": "v0.3.0",
         "assets": {
-          "synod-player-v0.3.0.js": "0000000000000000000000000000000000000000000000000000000000000000",
-          "synod-player-v0.3.0.d.ts": "0000000000000000000000000000000000000000000000000000000000000000",
-          "synod-player-fonts-v0.3.0.tar.gz": "0000000000000000000000000000000000000000000000000000000000000000"
+          "synod-player-v0.3.0.js": "0db48b83373694b9044cd3ef8f7bb492d75a1c05fd2e11f7a50ee8f8ca88171b",
+          "synod-player-v0.3.0.d.ts": "de81a2f61aef8c8eeb5155c6208362c8386ba6385d781fc52cb91ce5e1a91e61",
+          "synod-player-fonts-v0.3.0.tar.gz": "15f5f6422e78837f289a7fb8ddf73ee12ed2ea641b05af6fa1f89e4ccc70e55d"
         }
-      },
-      "todo": "TODO(release): the all-zero commits and SHA-256 values are placeholders; the v0.3.0 release step replaces them with the tag commits and the SHA256SUMS values. Until then build with -local."
+      }
     }
   ]
 }

@@ -21,7 +21,7 @@ The site is a set of static pages that a small Go program builds from what the o
 | Design | Why Synod is the way it is, and the decisions |
 | Tribute | Leslie Lamport's "The Part-Time Parliament" and the name |
 
-Every program has a Run button. It calls `synod.wasm` (check, run, format) in a Web Worker and plays the result with the [player](https://github.com/synodlang/player). There are no recordings. Docs are versioned: `/docs/v0.2/` is built from that version's pins and `/docs/` leads to the latest. Search is a static `search.json` per version.
+Every program has a Run button. It calls `synod.wasm` (check, run, format) in a Web Worker and plays the result with the [player](https://github.com/synodlang/player). There are no recordings. Docs are versioned: `/docs/v0.2/` and `/docs/v0.3/` are each built from that version's pins and `/docs/` leads to the latest. Search is a static `search.json` per version.
 
 `install/` and `install.sh` are served as they are in this repository (the install page and the install script, https://synodlang.github.io/install.sh), and the build checks that the copies are byte-identical.
 
@@ -99,6 +99,6 @@ Keep pages small and plain. Use LF line endings, no trailing spaces and a final 
 
 Synod is named after the Synod protocol, the core consensus algorithm in Leslie Lamport's paper "The Part-Time Parliament" (ACM Transactions on Computer Systems, 1998; first submitted in 1990). The paper tells it as the story of the parliament of the ancient Greek island of Paxos, whose part-time legislators could agree on decrees although they came and went; today the algorithm is known as Paxos. Lamport later explained it plainly in "Paxos Made Simple" (2001), and in 2013 he received the ACM A.M. Turing Award for fundamental contributions to the theory and practice of distributed and concurrent systems. His "Time, Clocks, and the Ordering of Events in a Distributed System" (1978) and his TLA+ specification language shaped how we reason about such systems. We are grateful for his work, and we hope Synod honours it by making these ideas easier to watch and understand. The website tells this story in its own words.
 
-Implements Synod 0.2 (specification: https://github.com/synodlang/dsl).
+Implements Synod 0.3 (specification: https://github.com/synodlang/dsl).
 
 Licensed under the [Apache License 2.0](LICENSE).
