@@ -21,8 +21,8 @@ func TestDepsV03(t *testing.T) {
 	if !v3.HasLooks() || v3.FontsAsset() == "" {
 		t.Error("v0.3 pins looks and the fonts asset")
 	}
-	if len(v3.Placeholders()) == 0 || len(v2.Placeholders()) != 0 {
-		t.Error("only v0.3 has placeholder pins until the release step")
+	if len(v3.Placeholders()) != 0 || len(v2.Placeholders()) != 0 {
+		t.Errorf("released pins only, found placeholders %v %v", v2.Placeholders(), v3.Placeholders())
 	}
 }
 
@@ -32,8 +32,10 @@ func TestFetchRefusesPlaceholders(t *testing.T) {
 		t.Fatal(err)
 	}
 	v3, _ := d.Find("v0.3")
+	held := *v3
+	held.Std.Commit = zeroCommit
 	f := NewFetcher(t.TempDir(), nil)
-	if err := f.Fetch(v3); err == nil || !strings.Contains(err.Error(), "placeholders") {
+	if err := f.Fetch(&held); err == nil || !strings.Contains(err.Error(), "placeholders") {
 		t.Fatalf("fetch of placeholder pins: %v", err)
 	}
 }
